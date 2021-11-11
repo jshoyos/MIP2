@@ -5,4 +5,4 @@ class Board:
         self.winning_size = winning_size
         self.current_state = [['.']* self.board_size for i in range(0, self.board_size)]
         for x, y in block_coordinates:
-            self.current_state[x][y] = 'B'
+            self.current_state[x][y] = '*'

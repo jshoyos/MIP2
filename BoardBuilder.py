@@ -18,11 +18,11 @@ class BoardBuilder:
             except ValueError as e:
                 print('input must be an integer. Try again')
                 continue
-            if (self.board_size < 3 |self.board_size > 10):
+            if (self.board_size < 3 or self.board_size > 10):
                 print('Invalid board size!!! Size must be between 3 and 10')
                 self.board_size = None
             else:
-                invalid_size = False
+                return self
 
     def winningSize(self):
         invalid_winning_size = True
@@ -35,11 +35,11 @@ class BoardBuilder:
                 except ValueError as e:
                     print('input must be an integer. Try again')
                     continue
-                if (self.winning_size < 3 |self.winning_size > self.board_size):
+                if (self.winning_size < 3 or self.winning_size > self.board_size):
                     print(F'Invalid winning line-up size!!! Size must be between 3 and {self.board_size}')
                     self.winning_size = None
                 else:
-                    invalid_winning_size = False
+                    return self
 
     def blocks(self):
         invalide_block_size = True
@@ -52,11 +52,11 @@ class BoardBuilder:
                 except ValueError as e:
                     print('input must be an integer. Try again')
                     continue
-                if (self.number_blocks < 0 |self.number_blocks > 2*self.board_size):
+                if (self.number_blocks < 0 or self.number_blocks > 2*self.board_size):
                     print(F'Invalid number of blocks!!! Number of blocks must be between 0 and {2*self.board_size}')
                     self.number_blocks = None
                 else:
-                    invalide_block_size = False
+                    return self
 
     def coordinates(self):
         if (self.number_blocks == None):
@@ -69,16 +69,19 @@ class BoardBuilder:
                     try:
                         x = int(input(f'Enter the x value for block #{i+1}:'))
                         y = int(input(f'Enter the y value for block #{i+1}:'))
+                        if (x >= 0 and not(x > self.board_size) and y >= 0 and not(y > self.board_size)):
+                            if ((x,y) in self.block_coordinates):
+                                print('These coordiantes already contain a block')
+                                i -= 1
+                                continue
+                            else:
+                                self.block_coordinates.append((x,y))
+                                invalid_coordinates = False
+                        else:
+                            print('Coordinates cannot be outside the board!')
                     except ValueError as e:
                         print('Coordinates must only contain integers!! Try again')
-                    if not(x < self.board_size | x > self.board_size | y < self.board_size | y > self.board_size):
-                        if ((x,y) in self.block_coordinates):
-                            print('These coordiantes already contain a block')
-                            i -= 1
-                            continue
-                        else:
-                            self.block_coordinates.append((x,y))
-                            invalid_coordinates = False
+            return self
 
     def build(self):
         should_throw = False
