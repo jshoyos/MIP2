@@ -1,4 +1,6 @@
 import time
+from BoardBuilder import BoardBuilder
+
 class Game:
 	BOARD_SIZE = 3
 	MINIMAX = 0
@@ -10,55 +12,69 @@ class Game:
 		self.initialize_game()
 		self.recommend = recommend
 		
+	def main_menu(self):
+		display_menu = True
+		print('Main menu')
+		while display_menu:
+			print('Press 1 to set the board size:')
+			print('press 2 to set the number of blocks:')
+			print('press 3 to set length of winning line:')
 	def initialize_game(self):
-		self.current_state = [['.']* self.BOARD_SIZE for i in range(0, self.BOARD_SIZE)]
+		builder = BoardBuilder()
+		builder.boardSize()
+		builder.blocks()
+		builder.coordinates()
+		builder.winningSize()
+		self.board = builder.build()
+
+		#self.board.current_state = [['.']* self.board.board_size for i in range(0, self.board.board_size)]
 		# Player X always plays first
 		self.player_turn = 'X'
 
 	def draw_board(self):
 		print()
-		for y in range(0, self.BOARD_SIZE):
-			for x in range(0, self.BOARD_SIZE):
-				print(F'{self.current_state[x][y]}', end="")
+		for y in range(0, self.board.board_size):
+			for x in range(0, self.board.board_size):
+				print(F'{self.board.current_state[x][y]}', end="")
 			print()
 		print()
 		
 	def is_valid(self, px, py):
-		if px < 0 or px > self.BOARD_SIZE - 1 or py < 0 or py > self.BOARD_SIZE - 1:
+		if px < 0 or px > self.board.board_size - 1 or py < 0 or py > self.board.board_size - 1:
 			return False
-		elif self.current_state[px][py] != '.':
+		elif self.board.current_state[px][py] != '.':
 			return False
 		else:
 			return True
 
 	def is_end(self):
 		# Vertical win
-		for i in range(0, self.BOARD_SIZE):
-			if (self.current_state[0][i] != '.' and
-				self.current_state[0][i] == self.current_state[1][i] and
-				self.current_state[1][i] == self.current_state[2][i]):
-				return self.current_state[0][i]
+		for i in range(0, self.board.board_size):
+			if (self.board.current_state[0][i] != '.' and
+				self.board.current_state[0][i] == self.board.current_state[1][i] and
+				self.board.current_state[1][i] == self.board.current_state[2][i]):
+				return self.board.current_state[0][i]
 		# Horizontal win
-		for i in range(0, self.BOARD_SIZE):
-			if (self.current_state[i] == ['X', 'X', 'X']):
+		for i in range(0, self.board.board_size):
+			if (self.board.current_state[i] == ['X', 'X', 'X']):
 				return 'X'
-			elif (self.current_state[i] == ['O', 'O', 'O']):
+			elif (self.board.current_state[i] == ['O', 'O', 'O']):
 				return 'O'
 		# Main diagonal win
-		if (self.current_state[0][0] != '.' and
-			self.current_state[0][0] == self.current_state[1][1] and
-			self.current_state[0][0] == self.current_state[2][2]):
-			return self.current_state[0][0]
+		if (self.board.current_state[0][0] != '.' and
+			self.board.current_state[0][0] == self.board.current_state[1][1] and
+			self.board.current_state[0][0] == self.board.current_state[2][2]):
+			return self.board.current_state[0][0]
 		# Second diagonal win
-		if (self.current_state[0][2] != '.' and
-			self.current_state[0][2] == self.current_state[1][1] and
-			self.current_state[0][2] == self.current_state[2][0]):
-			return self.current_state[0][2]
+		if (self.board.current_state[0][2] != '.' and
+			self.board.current_state[0][2] == self.board.current_state[1][1] and
+			self.board.current_state[0][2] == self.board.current_state[2][0]):
+			return self.board.current_state[0][2]
 		# Is whole board full?
-		for i in range(0, self.BOARD_SIZE):
-			for j in range(0, 3):
+		for i in range(0, self.board.board_size):
+			for j in range(0, self.board.board_size):
 				# There's an empty field, we continue the game
-				if (self.current_state[i][j] == '.'):
+				if (self.board.current_state[i][j] == '.'):
 					return None
 		# It's a tie!
 		return '.'
@@ -112,24 +128,24 @@ class Game:
 			return (1, x, y)
 		elif result == '.':
 			return (0, x, y)
-		for i in range(0, self.BOARD_SIZE):
-			for j in range(0, self.BOARD_SIZE):
-				if self.current_state[i][j] == '.':
+		for i in range(0, self.board.board_size):
+			for j in range(0, self.board.board_size):
+				if self.board.current_state[i][j] == '.':
 					if max:
-						self.current_state[i][j] = 'O'
+						self.board.current_state[i][j] = 'O'
 						(v, _, _) = self.minimax(max=False)
 						if v > value:
 							value = v
 							x = i
 							y = j
 					else:
-						self.current_state[i][j] = 'X'
+						self.board.current_state[i][j] = 'X'
 						(v, _, _) = self.minimax(max=True)
 						if v < value:
 							value = v
 							x = i
 							y = j
-					self.current_state[i][j] = '.'
+					self.board.current_state[i][j] = '.'
 		return (value, x, y)
 
 	def alphabeta(self, alpha=-2, beta=2, max=False):
@@ -151,24 +167,24 @@ class Game:
 			return (1, x, y)
 		elif result == '.':
 			return (0, x, y)
-		for i in range(0, self.BOARD_SIZE):
-			for j in range(0, self.BOARD_SIZE):
-				if self.current_state[i][j] == '.':
+		for i in range(0, self.board.board_size):
+			for j in range(0, self.board.board_size):
+				if self.board.current_state[i][j] == '.':
 					if max:
-						self.current_state[i][j] = 'O'
+						self.board.current_state[i][j] = 'O'
 						(v, _, _) = self.alphabeta(alpha, beta, max=False)
 						if v > value:
 							value = v
 							x = i
 							y = j
 					else:
-						self.current_state[i][j] = 'X'
+						self.board.current_state[i][j] = 'X'
 						(v, _, _) = self.alphabeta(alpha, beta, max=True)
 						if v < value:
 							value = v
 							x = i
 							y = j
-					self.current_state[i][j] = '.'
+					self.board.current_state[i][j] = '.'
 					if max: 
 						if value >= beta:
 							return (value, x, y)
@@ -212,5 +228,5 @@ class Game:
 			if (self.player_turn == 'X' and player_x == self.AI) or (self.player_turn == 'O' and player_o == self.AI):
 						print(F'Evaluation time: {round(end - start, 7)}s')
 						print(F'Player {self.player_turn} under AI control plays: x = {x}, y = {y}')
-			self.current_state[x][y] = self.player_turn
+			self.board.current_state[x][y] = self.player_turn
 			self.switch_player()
