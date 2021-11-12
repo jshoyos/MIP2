@@ -69,7 +69,7 @@ class BoardBuilder:
                     try:
                         x = int(input(f'Enter the x value for block #{i+1}:'))
                         y = int(input(f'Enter the y value for block #{i+1}:'))
-                        if (x >= 0 and not(x > self.board_size) and y >= 0 and not(y > self.board_size)):
+                        if (x >= 0 and x < self.board_size and y >= 0 and y < self.board_size):
                             if ((x,y) in self.block_coordinates):
                                 print('These coordiantes already contain a block')
                                 i -= 1

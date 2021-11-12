@@ -1,4 +1,5 @@
 import time
+from Board import Board
 from BoardBuilder import BoardBuilder
 
 class Game:
@@ -6,16 +7,30 @@ class Game:
 	ALPHABETA = 1
 	HUMAN = 2
 	AI = 3
-	
+
 	def __init__(self, recommend = True):
 		self.initialize_game()
 		self.recommend = recommend
 
 	def initialize_game(self):
 		self.board = BoardBuilder().boardSize().blocks().coordinates().winningSize().build()
-
+		self.d1 = int(input('Enter the max depth for player one: '))
+		self.d2 = int(input('Enter the max depth for player two: '))
 		# Player X always plays first
 		self.player_turn = 'X'
+
+	def test1(self):
+		self.board = Board(3, 0, 3, list())
+		self.board.current_state = [['O', 'X', 'O'],
+				                      ['X', 'X', 'O'],
+				                      ['X', '.', '.']]
+		# self.board.current_state = [['X', 'O', 'X','O','X'],
+		# 							['.', 'O', '.','.','.'],
+		# 							['.', 'X', 'X','.','.'],
+		# 							['.', 'X', '.','X','.'],
+		# 							['.', 'X', '.','.','X']]
+		self.draw_board()
+		self.check_end()
 
 	def draw_board(self):
 		print()
@@ -35,47 +50,47 @@ class Game:
 
 	def is_end(self):
 		# Vertical win
-		count = 0
 		for i in range(0, self.board.board_size):
+			count = 1
 			for j in range(0, self.board.board_size - 1):
-				if (self.board.current_state[i][j] == '.' or self.board.current_state[i][i] == '*'):
-					count = 0
-				elif (self.board.current_state[i][j] == self.board.current_state[i][j+1]):
+				isSameAsNext = self.board.current_state[i][j] == self.board.current_state[i][j+1]
+				if (self.board.current_state[i][j] == '.' or self.board.current_state[i][i] == '*' or not(isSameAsNext)):
+					count = 1
+				else:
 					count += 1
 					if (count == self.board.winning_size):
 						return self.board.current_state[i][j]
-		print('checked vertical')
 		# Horizontal win
-		count = 0
 		for j in range(0, self.board.board_size):
+			count = 1
 			for i in range(0, self.board.board_size - 1):
-				if (self.board.current_state[i][j] == '.' or self.board.current_state[i][i] == '*'):
-					count = 0
-				elif (self.board.current_state[i][j] == self.board.current_state[i+1][j]):
+				isSameAsNext = self.board.current_state[i][j] == self.board.current_state[i+1][j]
+				if (self.board.current_state[i][j] == '.' or self.board.current_state[i][i] == '*' or not(isSameAsNext)):
+					count = 1
+				else:
 					count += 1
 					if (count == self.board.winning_size):
 						return self.board.current_state[i][j]
-		print('checked horizontal')
 		# Main diagonal win
-		count = 0
-		for i in range(0, self.board.board_size - 1):
-			if (self.board.current_state[i][i] == '.' or self.board.current_state[i][i] == '*'):
-				count = 0
-			elif (self.board.current_state[i][i] == self.board.current_state[i+1][i+1]):
-				count += 1
-				if (count == self.board.winning_size):
-					return self.board.current_state[i][i]
-		print('checked main vertical')
-		# Second diagonal win
-		count = 0
-		for i in reversed(range(1, self.board.board_size)):
-			if (self.board.current_state[i][i] == '.' or self.board.current_state[i][i] == '*'):
-				count = 0
-			elif (self.board.current_state[i][i] == self.board.current_state[i-1][i-1]):
-				count += 1
-				if (count == self.board.winning_size):
-					return self.board.current_state[i][i]
-		print('checked second vertical')
+		# count = 1
+		# for i in range(0, self.board.board_size - 1):
+		# 	isSameAsNext = self.board.current_state[i][i] == self.board.current_state[i+1][i+1]
+		# 	if (self.board.current_state[i][i] == '.' or self.board.current_state[i][i] == '*' or not(isSameAsNext)):
+		# 		count = 1
+		# 	else:
+		# 		count += 1
+		# 		if (count == self.board.winning_size):
+		# 			return self.board.current_state[i][i]
+		# # Second diagonal win
+		# count = 1
+		# for i in reversed(range(1, self.board.board_size)):
+		# 	isSameAsNext = self.board.current_state[i][i] == self.board.current_state[i-1][i-1]
+		# 	if (self.board.current_state[i][i] == '.' or self.board.current_state[i][i] == '*' or not(isSameAsNext)):
+		# 		count = 1
+		# 	else:
+		# 		count += 1
+		# 		if (count == self.board.winning_size):
+		# 			return self.board.current_state[i][i]
 		# Is whole board full?
 		for i in range(0, self.board.board_size):
 			for j in range(0, self.board.board_size):
@@ -95,7 +110,7 @@ class Game:
 				print('The winner is O!')
 			elif self.result == '.':
 				print("It's a tie!")
-			self.initialize_game()
+			#self.initialize_game()
 		return self.result
 
 	def input_move(self):
@@ -214,6 +229,7 @@ class Game:
 			self.draw_board()
 			print('Going Again')
 			if self.check_end():
+				print('should not be here')
 				return
 			start = time.time()
 			if algo == self.MINIMAX:
