@@ -10,8 +10,6 @@ def main():
 	playerOneType = Game.HUMAN if playerOneType else Game.AI
 	playerTwoType = Game.HUMAN if playerTwoType else Game.AI
 	g.play(algo=algo,player_x=playerOneType,player_o=playerTwoType)
-	# g.test1()
-	# g.play(algo=Game.MINIMAX,player_x=Game.AI,player_o=Game.HUMAN)
 
 if __name__ == "__main__":
 	main()

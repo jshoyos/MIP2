@@ -1,6 +1,7 @@
 import time
 from Board import Board
 from BoardBuilder import BoardBuilder
+import numpy as np
 
 class Game:
 	MINIMAX = 0
@@ -51,46 +52,24 @@ class Game:
 	def is_end(self):
 		# Vertical win
 		for i in range(0, self.board.board_size):
-			count = 1
-			for j in range(0, self.board.board_size - 1):
-				isSameAsNext = self.board.current_state[i][j] == self.board.current_state[i][j+1]
-				if (self.board.current_state[i][j] == '.' or self.board.current_state[i][i] == '*' or not(isSameAsNext)):
-					count = 1
-				else:
-					count += 1
-					if (count == self.board.winning_size):
-						return self.board.current_state[i][j]
+			result = self.checkStreak(self.board.current_state[i])
+			if result:
+				return result
 		# Horizontal win
-		for j in range(0, self.board.board_size):
-			count = 1
-			for i in range(0, self.board.board_size - 1):
-				isSameAsNext = self.board.current_state[i][j] == self.board.current_state[i+1][j]
-				if (self.board.current_state[i][j] == '.' or self.board.current_state[i][i] == '*' or not(isSameAsNext)):
-					count = 1
-				else:
-					count += 1
-					if (count == self.board.winning_size):
-						return self.board.current_state[i][j]
-		# Main diagonal win
-		# count = 1
-		# for i in range(0, self.board.board_size - 1):
-		# 	isSameAsNext = self.board.current_state[i][i] == self.board.current_state[i+1][i+1]
-		# 	if (self.board.current_state[i][i] == '.' or self.board.current_state[i][i] == '*' or not(isSameAsNext)):
-		# 		count = 1
-		# 	else:
-		# 		count += 1
-		# 		if (count == self.board.winning_size):
-		# 			return self.board.current_state[i][i]
-		# # Second diagonal win
-		# count = 1
-		# for i in reversed(range(1, self.board.board_size)):
-		# 	isSameAsNext = self.board.current_state[i][i] == self.board.current_state[i-1][i-1]
-		# 	if (self.board.current_state[i][i] == '.' or self.board.current_state[i][i] == '*' or not(isSameAsNext)):
-		# 		count = 1
-		# 	else:
-		# 		count += 1
-		# 		if (count == self.board.winning_size):
-		# 			return self.board.current_state[i][i]
+		for i in range(0, self.board.board_size):
+			result = self.checkStreak([row[i] for row in self.board.current_state])
+			if result:
+				return result
+		# Diagonal win
+		boardArray = np.array(self.board.current_state)
+		diags = [boardArray[::-1,:].diagonal(i) for i in range(-boardArray.shape[0]+1,boardArray.shape[1])]
+		diags.extend(boardArray.diagonal(i) for i in range(boardArray.shape[1]-1,-boardArray.shape[0],-1))
+		
+		for diag in diags:
+			if len(diag) >= self.board.winning_size:
+				result = self.checkStreak(diag.tolist())
+			if result:
+				return result
 		# Is whole board full?
 		for i in range(0, self.board.board_size):
 			for j in range(0, self.board.board_size):
@@ -229,7 +208,6 @@ class Game:
 			self.draw_board()
 			print('Going Again')
 			if self.check_end():
-				print('should not be here')
 				return
 			start = time.time()
 			if algo == self.MINIMAX:
@@ -253,3 +231,14 @@ class Game:
 						print(F'Player {self.player_turn} under AI control plays: x = {x}, y = {y}')
 			self.board.current_state[x][y] = self.player_turn
 			self.switch_player()
+
+	def checkStreak(self, array):
+		count = 1
+		for i in range(len(array)-1):
+			if (not(array[i] == '.' or array[i] == '*') and array[i] == array[i+1]):
+				count += 1
+				if (count == self.board.winning_size):
+					return array[i]
+			else:
+				count = 1
+		return None
