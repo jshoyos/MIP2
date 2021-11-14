@@ -21,17 +21,17 @@ class Game:
 		self.player_turn = 'X'
 
 	def test1(self):
-		self.board = Board(3, 0, 3, list())
-		self.board.current_state = [['O', 'X', 'O'],
-				                      ['X', 'X', 'O'],
-				                      ['X', '.', '.']]
-		# self.board.current_state = [['X', 'O', 'X','O','X'],
-		# 							['.', 'O', '.','.','.'],
-		# 							['.', 'X', 'X','.','.'],
-		# 							['.', 'X', '.','X','.'],
-		# 							['.', 'X', '.','.','X']]
+		self.board = Board(5, 1, 4, list())
+		# self.board.current_state = [['O', 'X', 'O'],
+		# 		                      ['X', 'X', 'O'],
+		# 		                      ['X', '.', '.']]
+		self.board.current_state = [['X', 'O', 'X','O','X'],
+									['.', 'O', '*','*','.'],
+									['.', 'X', 'X','.','.'],
+									['.', 'X', '.','X','.'],
+									['*', 'X', '*','.','X']]
 		self.draw_board()
-		self.check_end()
+		print(self.e1())
 
 	def draw_board(self):
 		print()
@@ -242,3 +242,55 @@ class Game:
 			else:
 				count = 1
 		return None
+	
+	def e1(self):
+		boardArray = np.array(self.board.current_state)
+		diags = [boardArray[::-1,:].diagonal(i) for i in range(-boardArray.shape[0]+1,boardArray.shape[1])]
+		diags.extend(boardArray.diagonal(i) for i in range(boardArray.shape[1]-1,-boardArray.shape[0],-1))
+
+		diagResult = list()
+		for diag in diags:
+			if len(diag) >= self.board.winning_size:
+				diagResult.append(self.e1_logic(diag.tolist()))
+				print(f'diagResult: {diagResult}')
+		
+		verticalResult = list()
+		for i in range(0, self.board.board_size):
+			print(self.board.current_state[i])
+			verticalResult.append(self.e1_logic(self.board.current_state[i]))
+			print(f'verticalResult: {verticalResult}')
+		
+		horizontalResult = list()
+		for i in range(0, self.board.board_size):
+			horizontalResult.append(self.e1_logic([row[i] for row in self.board.current_state]))
+			print(f'horizontal: {horizontalResult}')
+
+		return np.sum(diagResult) + np.sum(horizontalResult) + np.sum(verticalResult)
+			
+	def e1_logic(self, array):
+		OCount = 1
+		XCount = 1
+		resultCount = 0
+		for i in range(len(array)-1):
+			if ((array[i] == array[i+1] or array[i+1] == '.' or array[i] == '.') and (array[i] == 'O' or array[i+1] == 'O')):
+				XCount = 1
+				OCount += 1
+				if (OCount == self.board.winning_size):
+					resultCount -= 1
+			elif ((array[i] == array[i+1] or array[i+1] == '.' or array[i] == '.') and (array[i] == 'X' or array[i+1] == 'X')):
+				OCount = 1
+				XCount += 1
+				if (XCount == self.board.winning_size):
+					resultCount += 1
+			elif (array[i] == array[i+1] and array[i] == '.'):
+				XCount += 1
+				OCount += 1
+				if (XCount == self.board.winning_size):
+					resultCount += 1
+				if (OCount == self.board.winning_size):
+					resultCount -= 1
+			else:
+				XCount = 1
+				OCount = 1
+		
+		return resultCount
