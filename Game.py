@@ -198,39 +198,45 @@ class Game:
 		return (value, x, y)
 
 	def play(self,algo=None,player_x=None,player_o=None):
-		if algo == None:
-			algo = self.ALPHABETA
-		if player_x == None:
-			player_x = self.HUMAN
-		if player_o == None:
-			player_o = self.HUMAN
-		while True:
-			self.draw_board()
-			print('Going Again')
-			if self.check_end():
-				return
-			start = time.time()
-			if algo == self.MINIMAX:
-				if self.player_turn == 'X':
-					(_, x, y) = self.minimax(max=False)
-				else:
-					(_, x, y) = self.minimax(max=True)
-			else: # algo == self.ALPHABETA
-				if self.player_turn == 'X':
-					(m, x, y) = self.alphabeta(max=False)
-				else:
-					(m, x, y) = self.alphabeta(max=True)
-			end = time.time()
-			if (self.player_turn == 'X' and player_x == self.HUMAN) or (self.player_turn == 'O' and player_o == self.HUMAN):
-					if self.recommend:
-						print(F'Evaluation time: {round(end - start, 7)}s')
-						print(F'Recommended move: x = {x}, y = {y}')
-					(x,y) = self.input_move()
-			if (self.player_turn == 'X' and player_x == self.AI) or (self.player_turn == 'O' and player_o == self.AI):
-						print(F'Evaluation time: {round(end - start, 7)}s')
-						print(F'Player {self.player_turn} under AI control plays: x = {x}, y = {y}')
-			self.board.current_state[x][y] = self.player_turn
-			self.switch_player()
+		n = self.board.board_size
+		b = self.board.number_blocks
+		s = self.board.winning_size
+		t = 5
+		with open(F'gameTrace-{n}{b}{s}{t}.txt','w+') as file:
+			file.write(F'n={n} b={b} s={s} t={t}\n')
+			if algo == None:
+				algo = self.ALPHABETA
+			if player_x == None:
+				player_x = self.HUMAN
+			if player_o == None:
+				player_o = self.HUMAN
+			while True:
+				self.draw_board()
+				print('Going Again')
+				if self.check_end():
+					return
+				start = time.time()
+				if algo == self.MINIMAX:
+					if self.player_turn == 'X':
+						(_, x, y) = self.minimax(max=False)
+					else:
+						(_, x, y) = self.minimax(max=True)
+				else: # algo == self.ALPHABETA
+					if self.player_turn == 'X':
+						(m, x, y) = self.alphabeta(max=False)
+					else:
+						(m, x, y) = self.alphabeta(max=True)
+				end = time.time()
+				if (self.player_turn == 'X' and player_x == self.HUMAN) or (self.player_turn == 'O' and player_o == self.HUMAN):
+						if self.recommend:
+							print(F'Evaluation time: {round(end - start, 7)}s')
+							print(F'Recommended move: x = {x}, y = {y}')
+						(x,y) = self.input_move()
+				if (self.player_turn == 'X' and player_x == self.AI) or (self.player_turn == 'O' and player_o == self.AI):
+							print(F'Evaluation time: {round(end - start, 7)}s')
+							print(F'Player {self.player_turn} under AI control plays: x = {x}, y = {y}')
+				self.board.current_state[x][y] = self.player_turn
+				self.switch_player()
 
 	def checkStreak(self, array):
 		count = 1
