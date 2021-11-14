@@ -3,7 +3,7 @@ from Game import Game
 
 def main():
 	g = Game(recommend=True)
-	useMin = int(input('Press 1 to use a minimax, or press 0 to use alphabeta'))
+	useMin = int(input('Press 1 to use a minimax, or press 0 to use alphabeta: '))
 	playerOneType = int(input('Press 1 if player one is human, press 0 if player one is AI: '))
 	playerTwoType = int(input('Press 1 if player two is human, press 0 if player two is AI: '))
 	algo = Game.MINIMAX if useMin else Game.ALPHABETA
