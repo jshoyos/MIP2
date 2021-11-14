@@ -21,21 +21,28 @@ class Game:
 		self.player_turn = 'X'
 
 	def test1(self):
-		self.board = Board(5, 1, 4, list())
-		# self.board.current_state = [['O', 'X', 'O'],
-		# 		                      ['X', 'X', 'O'],
-		# 		                      ['X', '.', '.']]
-		self.board.current_state = [['X', 'O', 'X','O','X'],
-									['.', 'O', '*','*','.'],
-									['.', 'X', 'X','.','.'],
-									['.', 'X', '.','X','.'],
-									['*', 'X', '*','.','X']]
+		self.board = Board(3, 0, 3, list())
+		self.board.current_state = [['O', 'X', 'O'],
+				                      ['X', 'X', 'O'],
+				                      ['X', '.', '.']]
+		# self.board.current_state = [['X', 'O', 'X','O','X'],
+		# 							['.', 'O', '*','*','.'],
+		# 							['.', 'X', 'X','.','.'],
+		# 							['.', 'X', '.','X','.'],
+		# 							['*', 'X', '*','.','X']]
 		self.draw_board()
-		print(self.e1())
+		print(self.e2())
 
 	def draw_board(self):
+		print("  ", end="")
+		for i in range(self.board.board_size):
+			print(chr(i + 65), end="")
+		print('\n +', end="")
+		for i in range(self.board.board_size):
+			print('-', end="")
 		print()
 		for y in range(0, self.board.board_size):
+			print(f'{y}|', end="")
 			for x in range(0, self.board.board_size):
 				print(F'{self.board.current_state[x][y]}', end="")
 			print()
@@ -95,7 +102,7 @@ class Game:
 	def input_move(self):
 		while True:
 			print(F'Player {self.player_turn}, enter your move:')
-			px = int(input('enter the x coordinate: '))
+			px = int(ord(input('enter the x coordinate: ')) - 65)
 			py = int(input('enter the y coordinate: '))
 			if self.is_valid(px, py):
 				return (px,py)
@@ -109,7 +116,7 @@ class Game:
 			self.player_turn = 'X'
 		return self.player_turn
 
-	def minimax(self, max=False):
+	def minimax(self, maxdepth, max=False):
 		# Minimizing for 'X' and maximizing for 'O'
 		# Possible values are:
 		# -1 - win for 'X'
@@ -122,7 +129,12 @@ class Game:
 		x = None
 		y = None
 		result = self.is_end()
-		if result == 'X':
+		if maxdepth == 0:
+			if self.player_turn == 'X':
+				return self.e1()
+			else:
+				return self.e1() # change for e2
+		elif result == 'X':
 			return (-1, x, y)
 		elif result == 'O':
 			return (1, x, y)
@@ -133,14 +145,14 @@ class Game:
 				if self.board.current_state[i][j] == '.':
 					if max:
 						self.board.current_state[i][j] = 'O'
-						(v, _, _) = self.minimax(max=False)
+						(v, _, _) = self.minimax(self.d2-1,max=False)
 						if v > value:
 							value = v
 							x = i
 							y = j
 					else:
 						self.board.current_state[i][j] = 'X'
-						(v, _, _) = self.minimax(max=True)
+						(v, _, _) = self.minimax(self.d1-1,max=True)
 						if v < value:
 							value = v
 							x = i
@@ -148,7 +160,7 @@ class Game:
 					self.board.current_state[i][j] = '.'
 		return (value, x, y)
 
-	def alphabeta(self, alpha=-2, beta=2, max=False):
+	def alphabeta(self, maxdepth, alpha=-2, beta=2, max=False):
 		# Minimizing for 'X' and maximizing for 'O'
 		# Possible values are:
 		# -1 - win for 'X'
@@ -161,6 +173,11 @@ class Game:
 		x = None
 		y = None
 		result = self.is_end()
+		if maxdepth == 0:
+			if self.player_turn == 'X':
+				return self.e1()
+			else:
+				return self.e1() #change for e2
 		if result == 'X':
 			return (-1, x, y)
 		elif result == 'O':
@@ -172,14 +189,14 @@ class Game:
 				if self.board.current_state[i][j] == '.':
 					if max:
 						self.board.current_state[i][j] = 'O'
-						(v, _, _) = self.alphabeta(alpha, beta, max=False)
+						(v, _, _) = self.alphabeta(self.d2 - 1, alpha, beta, max=False)
 						if v > value:
 							value = v
 							x = i
 							y = j
 					else:
 						self.board.current_state[i][j] = 'X'
-						(v, _, _) = self.alphabeta(alpha, beta, max=True)
+						(v, _, _) = self.alphabeta(self.d1 -1, alpha, beta, max=True)
 						if v < value:
 							value = v
 							x = i
@@ -212,14 +229,14 @@ class Game:
 			start = time.time()
 			if algo == self.MINIMAX:
 				if self.player_turn == 'X':
-					(_, x, y) = self.minimax(max=False)
+					(_, x, y) = self.minimax(self.d1, max=False)
 				else:
-					(_, x, y) = self.minimax(max=True)
+					(_, x, y) = self.minimax(self.d2, max=True)
 			else: # algo == self.ALPHABETA
 				if self.player_turn == 'X':
-					(m, x, y) = self.alphabeta(max=False)
+					(m, x, y) = self.alphabeta(self.d1, max=False)
 				else:
-					(m, x, y) = self.alphabeta(max=True)
+					(m, x, y) = self.alphabeta(self.d2, max=True)
 			end = time.time()
 			if (self.player_turn == 'X' and player_x == self.HUMAN) or (self.player_turn == 'O' and player_o == self.HUMAN):
 					if self.recommend:
@@ -228,7 +245,7 @@ class Game:
 					(x,y) = self.input_move()
 			if (self.player_turn == 'X' and player_x == self.AI) or (self.player_turn == 'O' and player_o == self.AI):
 						print(F'Evaluation time: {round(end - start, 7)}s')
-						print(F'Player {self.player_turn} under AI control plays: x = {x}, y = {y}')
+						print(F'Player {self.player_turn} under AI control plays: {chr(x + 65)}{y}')
 			self.board.current_state[x][y] = self.player_turn
 			self.switch_player()
 
@@ -241,7 +258,7 @@ class Game:
 					return array[i]
 			else:
 				count = 1
-		return None
+		return None		
 	
 	def e1(self):
 		boardArray = np.array(self.board.current_state)
@@ -294,3 +311,59 @@ class Game:
 				OCount = 1
 		
 		return resultCount
+
+	def e2(self):
+		boardArray = np.array(self.board.current_state)
+		diags = [boardArray[::-1,:].diagonal(i) for i in range(-boardArray.shape[0]+1,boardArray.shape[1])]
+		diags.extend(boardArray.diagonal(i) for i in range(boardArray.shape[1]-1,-boardArray.shape[0],-1))
+
+		V = 0
+		# Diagonal
+		for diag in diags:
+			for i in range(self.board.winning_size):
+				if len(diag) >= self.board.winning_size:
+					result = self.e2_logic(diag, self.board.winning_size - i)
+					print(f'diag {result}')
+					if result == 'X':
+						V += 10**(self.board.winning_size - i)
+						break
+					elif result == 'O':
+						V -= 10**(self.board.winning_size - i)
+						break
+		
+		# Vertical
+		for col in range(0, self.board.board_size):
+			for i in range(self.board.winning_size):
+				result = self.e2_logic(self.board.current_state[col], self.board.winning_size - i)
+				print(f'col {result}')
+				if result == 'X':
+					V += 10**(self.board.winning_size - i)
+					break
+				elif result == 'O':
+					V -= 10**(self.board.winning_size - i)
+					break
+		
+		# Horizontal
+		for rowIndex in range(0, self.board.board_size):
+			for i in range(self.board.winning_size):
+				result = self.e2_logic([row[rowIndex] for row in self.board.current_state], self.board.winning_size - i)
+				print(f'rowIndex {result}')
+				if result == 'X':
+					V += 10**(self.board.winning_size - i)
+					break
+				elif result == 'O':
+					V -= 10**(self.board.winning_size - i)
+					break
+		
+		return V
+
+	def e2_logic(self, array, streakSize):
+		count = 1
+		for i in range(len(array)-1):
+			if (not(array[i] == '.' or array[i] == '*') and (streakSize == 1 or array[i] == array[i+1])):
+				count += 1
+				if (count == streakSize):
+					return array[i]
+			else:
+				count = 1
+		return None
