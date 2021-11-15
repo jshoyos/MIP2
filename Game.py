@@ -301,8 +301,9 @@ class Game:
 				file.write(F'Player 2: AI d={self.d2} e2(defensive)\n')
 
 			while True:
-				self.timer = Timer(self.t, self.stopTurn)
-				self.timer.start()
+				if (self.player_turn == 'X' and player_x == self.AI) or (self.player_turn == 'O' and player_o == self.AI):
+					self.timer = Timer(self.t, self.stopTurn)
+					self.timer.start()
 				self.move += 1
 				self.count = 0
 				self.avg_depth = 0
@@ -350,8 +351,9 @@ class Game:
 							print(F'Player {self.player_turn} under AI control plays: {chr(x + 65)}{y}')
 							print(F'Evaluation time: {round(end - start, 7)}s')
 				self.board.current_state[x][y] = self.player_turn
-				self.timer.cancel()
-				self.stop_event.clear()
+				if (self.player_turn == 'X' and player_x == self.AI) or (self.player_turn == 'O' and player_o == self.AI):
+					self.timer.cancel()
+					self.stop_event.clear()
 				self.switch_player()
 
 	def checkStreak(self, array):
