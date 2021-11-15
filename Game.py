@@ -149,10 +149,9 @@ class Game:
 		if maxdepth == 0:
 			self.visited +=1
 			if self.player_turn == 'X':
-				return self.e1()
+				return (self.e1(), x, y)
 			else:
-				return self.e1() # change for e2
-				
+				return (self.e2(), x, y)
 		elif result == 'X':
 			self.visited +=1
 			return (-1, x, y)
@@ -198,9 +197,9 @@ class Game:
 		if maxdepth == 0:
 			self.visited +=1
 			if self.player_turn == 'X':
-				return self.e1()
+				return (self.e1(), x, y)
 			else:
-				return self.e1() #change for e2
+				return (self.e2(), x, y)
 		if result == 'X':
 			self.visited +=1
 			return (-1, x, y)
@@ -222,7 +221,7 @@ class Game:
 							y = j
 					else:
 						self.board.current_state[i][j] = 'X'
-						(v, _, _) = self.alphabeta(self.d1 -1, alpha, beta, max=True)
+						(v, _, _) = self.alphabeta(self.d1 - 1, alpha, beta, max=True)
 						if v < value:
 							value = v
 							x = i
@@ -314,7 +313,7 @@ class Game:
 				count = 1
 		return None		
 	
-	def e1(self):
+	def e2(self):
 		boardArray = np.array(self.board.current_state)
 		diags = [boardArray[::-1,:].diagonal(i) for i in range(-boardArray.shape[0]+1,boardArray.shape[1])]
 		diags.extend(boardArray.diagonal(i) for i in range(boardArray.shape[1]-1,-boardArray.shape[0],-1))
@@ -338,7 +337,9 @@ class Game:
 
 		return np.sum(diagResult) + np.sum(horizontalResult) + np.sum(verticalResult)
 			
-	def e1_logic(self, array):
+	def e2_logic(self, array):
+		""" Count number of possible plays leading to a possible win """
+		""" We count the one for the max (player x) minus the one for min (player O) """
 		OCount = 1
 		XCount = 1
 		resultCount = 0
@@ -366,59 +367,30 @@ class Game:
 		
 		return resultCount
 
-	def e2(self):
+	def e1(self):
 		boardArray = np.array(self.board.current_state)
 		diags = [boardArray[::-1,:].diagonal(i) for i in range(-boardArray.shape[0]+1,boardArray.shape[1])]
 		diags.extend(boardArray.diagonal(i) for i in range(boardArray.shape[1]-1,-boardArray.shape[0],-1))
 
-		V = 0
+		result = list()
 		# Diagonal
 		for diag in diags:
-			for i in range(self.board.winning_size):
-				if len(diag) >= self.board.winning_size:
-					result = self.e2_logic(diag, self.board.winning_size - i)
-					print(f'diag {result}')
-					if result == 'X':
-						V += 10**(self.board.winning_size - i)
-						break
-					elif result == 'O':
-						V -= 10**(self.board.winning_size - i)
-						break
+			if len(diag) >= self.board.winning_size:
+				result.append(self.e2_logic(diag))
 		
 		# Vertical
-		for col in range(0, self.board.board_size):
-			for i in range(self.board.winning_size):
-				result = self.e2_logic(self.board.current_state[col], self.board.winning_size - i)
-				print(f'col {result}')
-				if result == 'X':
-					V += 10**(self.board.winning_size - i)
-					break
-				elif result == 'O':
-					V -= 10**(self.board.winning_size - i)
-					break
+		for col in range(self.board.board_size):
+			column = np.asarray(self.board.current_state[col])
+			result.append(self.e2_logic(column))
 		
 		# Horizontal
 		for rowIndex in range(0, self.board.board_size):
-			for i in range(self.board.winning_size):
-				result = self.e2_logic([row[rowIndex] for row in self.board.current_state], self.board.winning_size - i)
-				print(f'rowIndex {result}')
-				if result == 'X':
-					V += 10**(self.board.winning_size - i)
-					break
-				elif result == 'O':
-					V -= 10**(self.board.winning_size - i)
-					break
-		
-		return V
+			currentRow = np.asarray([row[rowIndex] for row in self.board.current_state])
+			result.append(self.e2_logic(currentRow))
+		return np.sum(result)
 
-	def e2_logic(self, array, streakSize):
-		count = 1
-		for i in range(len(array)-1):
-			if (not(array[i] == '.' or array[i] == '*') and (streakSize == 1 or array[i] == array[i+1])):
-				count += 1
-				if (count == streakSize):
-					return array[i]
-			else:
-				count = 1
-		return None
 
+	def e1_logic(self, array):
+		XCount = np.count_nonzero(array == 'X')
+		OCount = np.count_nonzero(array == 'O')
+		return XCount - OCount
