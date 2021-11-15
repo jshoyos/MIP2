@@ -11,8 +11,10 @@ class Game:
 
 	def __init__(self, recommend = True):
 		self.initialize_game()
-		self.recommend = recommend
-		self.visited = 0
+		self.recommend = recommend 
+		self.depth_array ={}
+		self.count = 0
+		self.avg_depth = 0
 
 	def initialize_game(self):
 		self.board = BoardBuilder().boardSize().blocks().coordinates().winningSize().build()
@@ -102,16 +104,19 @@ class Game:
 		# It's a tie!
 		return '.'
 
-	def check_end(self):
+	def check_end(self, file):
 		self.result = self.is_end()
 		# Printing the appropriate message if the game has ended
 		if self.result != None:
 			if self.result == 'X':
 				print('The winner is X!')
+				file.write('The winner is X!\n')
 			elif self.result == 'O':
 				print('The winner is O!')
+				file.write('The winner is O!\n')
 			elif self.result == '.':
 				print("It's a tie!")
+				file.write("It's a tie!\n")
 			#self.initialize_game()
 		return self.result
 
@@ -132,48 +137,58 @@ class Game:
 			self.player_turn = 'X'
 		return self.player_turn		
 
-	def minimax(self, maxdepth, max=False):
+	def minimax(self, maxdepth, max=False, depth = 0):
 		# Minimizing for 'X' and maximizing for 'O'
 		# Possible values are:
 		# -1 - win for 'X'
 		# 0  - a tie
 		# 1  - loss for 'X'
 		# We're initially setting it to 2 or -2 as worse than the worst case:
-
 		value = 2
 		if max:
 			value = -2
 		x = None
 		y = None
 		result = self.is_end()
-		if maxdepth == 0:
-			self.visited +=1
+		if maxdepth <= 0:
+			if depth in self.depth_array:
+				self.depth_array[depth] += 1
+			else:
+				self.depth_array[depth] = 1
+			self.count = 1
 			if self.player_turn == 'X':
 				return (self.e1(), x, y)
 			else:
 				return (self.e2(), x, y)
 		elif result == 'X':
-			self.visited +=1
 			return (-1, x, y)
 		elif result == 'O':
-			self.visited +=1
 			return (1, x, y)
 		elif result == '.':
-			self.visited +=1
 			return (0, x, y)
 		for i in range(0, self.board.board_size):
 			for j in range(0, self.board.board_size):
 				if self.board.current_state[i][j] == '.':
 					if max:
 						self.board.current_state[i][j] = 'O'
-						(v, _, _) = self.minimax(self.d2-1,max=False)
+						(v, _, _) = self.minimax(self.d2-1,max=False,depth=depth+1)
+						if depth in self.depth_array:
+							self.depth_array[depth] += 1
+						else:
+							self.depth_array[depth] = 1
+						self.count += 1
 						if v > value:
 							value = v
 							x = i
 							y = j
 					else:
 						self.board.current_state[i][j] = 'X'
-						(v, _, _) = self.minimax(self.d1-1,max=True)
+						(v, _, _) = self.minimax(self.d1-1,max=True,depth=depth+1)
+						if depth in self.depth_array:
+							self.depth_array[depth] += 1
+						else:
+							self.depth_array[depth] = 1
+						self.count += 1
 						if v < value:
 							value = v
 							x = i
@@ -195,19 +210,15 @@ class Game:
 		y = None
 		result = self.is_end()
 		if maxdepth == 0:
-			self.visited +=1
 			if self.player_turn == 'X':
 				return (self.e1(), x, y)
 			else:
 				return (self.e2(), x, y)
 		if result == 'X':
-			self.visited +=1
 			return (-1, x, y)
 		elif result == 'O':
-			self.visited +=1
 			return (1, x, y)
 		elif result == '.':
-			self.visited +=1
 			return (0, x, y)
 		for i in range(0, self.board.board_size):
 			for j in range(0, self.board.board_size):
@@ -266,15 +277,24 @@ class Game:
 				file.write(F'Player 2: AI d={self.d2} e2(defensive)\n')
 
 			while True:
+				self.count = 0
+				self.avg_depth = 0
+				self.depth_array.clear()
 				self.draw_board()
 				self.draw_board_file(file)
 				print('Going Again')
-				if self.check_end():
+				if self.check_end(file):
+					file.write(F'6(b)i   Average evaluation time:s\n')
+					file.write(F'6(b)ii  Total heuristic evaluations:\n')
+					file.write(F'6(b)iii Evaluations by depth:\n')
+					file.write(F'6(b)iv  Average evaluation depth:\n')
+					file.write(F'6(b)v   Average recursion depth:\n')
+					file.write(F'6(b)vi  Total moves:\n')
 					return
 				start = time.time()
 				if algo == self.MINIMAX:
 					if self.player_turn == 'X':
-						(_, x, y) = self.minimax(self.d1, max=False)
+						(_, x, y) = self.minimax(self.d1, max=False,)
 					else:
 						(_, x, y) = self.minimax(self.d2, max=True)
 				else: # algo == self.ALPHABETA
@@ -293,9 +313,12 @@ class Game:
 				if (self.player_turn == 'X' and player_x == self.AI) or (self.player_turn == 'O' and player_o == self.AI):
 							file.write(F'Player {self.player_turn} under AI control plays: {chr(x + 65)}{y}\n')
 							file.write(F'i   Evaluation time: {round(end - start, 7)}s\n')
-							file.write(F'ii  Heuristic evaluations:{self.visited}\n')
-							file.write(F'iii Evaluations by depth:\n')
-							file.write(F'iv  Average evaluation depth:\n')
+							file.write(F'ii  Heuristic evaluations:{self.count}\n')
+							file.write(F'iii Evaluations by depth:{self.depth_array}\n')
+							for k in self.depth_array.keys():
+								self.avg_depth += k* self.depth_array[k]
+							self.avg_depth = self.avg_depth/self.count
+							file.write(F'iv  Average evaluation depth:{round(self.avg_depth,1)}\n')
 							file.write(F'v   Average recursion depth:\n')
 							print(F'Player {self.player_turn} under AI control plays: {chr(x + 65)}{y}')
 							print(F'Evaluation time: {round(end - start, 7)}s')
