@@ -130,7 +130,7 @@ class Game:
 			self.player_turn = 'O'
 		elif self.player_turn == 'O':
 			self.player_turn = 'X'
-		return self.player_turn
+		return self.player_turn		
 
 	def minimax(self, maxdepth, max=False):
 		# Minimizing for 'X' and maximizing for 'O'
@@ -147,16 +147,20 @@ class Game:
 		y = None
 		result = self.is_end()
 		if maxdepth == 0:
+			self.visited +=1
 			if self.player_turn == 'X':
 				return self.e1()
 			else:
 				return self.e1() # change for e2
 				
 		elif result == 'X':
+			self.visited +=1
 			return (-1, x, y)
 		elif result == 'O':
+			self.visited +=1
 			return (1, x, y)
 		elif result == '.':
+			self.visited +=1
 			return (0, x, y)
 		for i in range(0, self.board.board_size):
 			for j in range(0, self.board.board_size):
@@ -164,7 +168,6 @@ class Game:
 					if max:
 						self.board.current_state[i][j] = 'O'
 						(v, _, _) = self.minimax(self.d2-1,max=False)
-						self.visited +=1
 						if v > value:
 							value = v
 							x = i
@@ -172,7 +175,6 @@ class Game:
 					else:
 						self.board.current_state[i][j] = 'X'
 						(v, _, _) = self.minimax(self.d1-1,max=True)
-						self.visited +=1
 						if v < value:
 							value = v
 							x = i
@@ -194,15 +196,19 @@ class Game:
 		y = None
 		result = self.is_end()
 		if maxdepth == 0:
+			self.visited +=1
 			if self.player_turn == 'X':
 				return self.e1()
 			else:
 				return self.e1() #change for e2
 		if result == 'X':
+			self.visited +=1
 			return (-1, x, y)
 		elif result == 'O':
+			self.visited +=1
 			return (1, x, y)
 		elif result == '.':
+			self.visited +=1
 			return (0, x, y)
 		for i in range(0, self.board.board_size):
 			for j in range(0, self.board.board_size):
@@ -210,7 +216,6 @@ class Game:
 					if max:
 						self.board.current_state[i][j] = 'O'
 						(v, _, _) = self.alphabeta(self.d2 - 1, alpha, beta, max=False)
-						self.visited +=1
 						if v > value:
 							value = v
 							x = i
@@ -218,7 +223,6 @@ class Game:
 					else:
 						self.board.current_state[i][j] = 'X'
 						(v, _, _) = self.alphabeta(self.d1 -1, alpha, beta, max=True)
-						self.visited +=1
 						if v < value:
 							value = v
 							x = i
