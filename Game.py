@@ -12,6 +12,7 @@ class Game:
 	def __init__(self, recommend = True):
 		self.initialize_game()
 		self.recommend = recommend
+		self.visited = 0
 
 	def initialize_game(self):
 		self.board = BoardBuilder().boardSize().blocks().coordinates().winningSize().build()
@@ -47,6 +48,21 @@ class Game:
 				print(F'{self.board.current_state[x][y]}', end="")
 			print()
 		print()
+	#TODO Should we put it in the same method?
+	def draw_board_file(self,file):
+		file.write("  ")
+		for i in range(self.board.board_size):
+			file.write(chr(i + 65))
+		file.write('\n +')
+		for i in range(self.board.board_size):
+			file.write('-')
+		file.write('\n')
+		for y in range(0, self.board.board_size):
+			file.write(f'{y}|')
+			for x in range(0, self.board.board_size):
+				file.write(F'{self.board.current_state[x][y]}')
+			file.write('\n')
+		file.write('\n')
 		
 	def is_valid(self, px, py):
 		if px < 0 or px > self.board.board_size - 1 or py < 0 or py > self.board.board_size - 1:
@@ -123,6 +139,7 @@ class Game:
 		# 0  - a tie
 		# 1  - loss for 'X'
 		# We're initially setting it to 2 or -2 as worse than the worst case:
+
 		value = 2
 		if max:
 			value = -2
@@ -134,6 +151,7 @@ class Game:
 				return self.e1()
 			else:
 				return self.e1() # change for e2
+				
 		elif result == 'X':
 			return (-1, x, y)
 		elif result == 'O':
@@ -146,6 +164,7 @@ class Game:
 					if max:
 						self.board.current_state[i][j] = 'O'
 						(v, _, _) = self.minimax(self.d2-1,max=False)
+						self.visited +=1
 						if v > value:
 							value = v
 							x = i
@@ -153,6 +172,7 @@ class Game:
 					else:
 						self.board.current_state[i][j] = 'X'
 						(v, _, _) = self.minimax(self.d1-1,max=True)
+						self.visited +=1
 						if v < value:
 							value = v
 							x = i
@@ -190,6 +210,7 @@ class Game:
 					if max:
 						self.board.current_state[i][j] = 'O'
 						(v, _, _) = self.alphabeta(self.d2 - 1, alpha, beta, max=False)
+						self.visited +=1
 						if v > value:
 							value = v
 							x = i
@@ -197,6 +218,7 @@ class Game:
 					else:
 						self.board.current_state[i][j] = 'X'
 						(v, _, _) = self.alphabeta(self.d1 -1, alpha, beta, max=True)
+						self.visited +=1
 						if v < value:
 							value = v
 							x = i
@@ -219,16 +241,30 @@ class Game:
 		b = self.board.number_blocks
 		s = self.board.winning_size
 		t = 5
-		with open(F'gameTrace-{n}{b}{s}{t}.txt','w+') as file:
+		bloc_list = list()
+		with open(F'gameTrace-{n}{b}{s}{t}.txt','a') as file:
 			file.write(F'n={n} b={b} s={s} t={t}\n')
+			for i in range(0, self.board.board_size):
+				for j in range(0, self.board.board_size):
+					if (self.board.current_state[i][j] == '*'):
+						bloc_list.append((i,j))
+			file.write(F'blocs={bloc_list}\n')
 			if algo == None:
 				algo = self.ALPHABETA
 			if player_x == None:
 				player_x = self.HUMAN
+				file.write(F'Player 1: HUMAN\n')
+			else:
+				file.write(F'Player 1: AI d={self.d1} e1(regular)\n')
 			if player_o == None:
 				player_o = self.HUMAN
+				file.write(F'Player 2: HUMAN\n')
+			else:
+				file.write(F'Player 2: AI d={self.d2} e2(defensive)\n')
+
 			while True:
 				self.draw_board()
+				self.draw_board_file(file)
 				print('Going Again')
 				if self.check_end():
 					return
@@ -246,12 +282,20 @@ class Game:
 				end = time.time()
 				if (self.player_turn == 'X' and player_x == self.HUMAN) or (self.player_turn == 'O' and player_o == self.HUMAN):
 						if self.recommend:
+							file.write(F'Evaluation time: {round(end - start, 7)}s')
+							file.write(F'Recommended move: x = {x}, y = {y}')
 							print(F'Evaluation time: {round(end - start, 7)}s')
 							print(F'Recommended move: x = {x}, y = {y}')
 						(x,y) = self.input_move()
 				if (self.player_turn == 'X' and player_x == self.AI) or (self.player_turn == 'O' and player_o == self.AI):
-							print(F'Evaluation time: {round(end - start, 7)}s')
+							file.write(F'Player {self.player_turn} under AI control plays: {chr(x + 65)}{y}\n')
+							file.write(F'i   Evaluation time: {round(end - start, 7)}s\n')
+							file.write(F'ii  Heuristic evaluations:{self.visited}\n')
+							file.write(F'iii Evaluations by depth:\n')
+							file.write(F'iv  Average evaluation depth:\n')
+							file.write(F'v   Average recursion depth:\n')
 							print(F'Player {self.player_turn} under AI control plays: {chr(x + 65)}{y}')
+							print(F'Evaluation time: {round(end - start, 7)}s')
 				self.board.current_state[x][y] = self.player_turn
 				self.switch_player()
 
@@ -373,3 +417,4 @@ class Game:
 			else:
 				count = 1
 		return None
+
