@@ -15,10 +15,12 @@ class Game:
 		self.initialize_game()
 		self.recommend = recommend 
 		self.depth_array ={}
-		self.count = 0
+		# self.count = 0
 		self.avg_depth = 0
 		self.stop_event = Event()
 		self.visited = 0
+		self.avg_time = []
+		self.totalHeuristic = 0
 
 	def initialize_game(self):
 		self.board = BoardBuilder().boardSize().blocks().coordinates().winningSize().build()
@@ -176,7 +178,7 @@ class Game:
 				self.depth_array[depth] += 1
 			else:
 				self.depth_array[depth] = 1
-			self.count = 1
+			# self.count += 1
 			if self.player_turn == 'X':
 				return (self.e1(), x, y)
 			else:
@@ -191,7 +193,7 @@ class Game:
 							self.depth_array[depth] += 1
 						else:
 							self.depth_array[depth] = 1
-						self.count += 1
+						# self.count += 1
 						if v > value:
 							value = v
 							x = i
@@ -203,7 +205,7 @@ class Game:
 							self.depth_array[depth] += 1
 						else:
 							self.depth_array[depth] = 1
-						self.count += 1
+						# self.count += 1
 						if v < value:
 							value = v
 							x = i
@@ -240,7 +242,7 @@ class Game:
 				self.depth_array[depth] += 1
 			else:
 				self.depth_array[depth] = 1
-			self.count = 1
+			# self.count += 1
 			if self.player_turn == 'X':
 				return (self.e1(), x, y)
 			else:
@@ -255,7 +257,6 @@ class Game:
 							self.depth_array[depth] += 1
 						else:
 							self.depth_array[depth] = 1
-						self.count += 1
 						if v > value:
 							value = v
 							x = i
@@ -267,7 +268,7 @@ class Game:
 							self.depth_array[depth] += 1
 						else:
 							self.depth_array[depth] = 1
-						self.count += 1
+						# self.count += 1
 						if v < value:
 							value = v
 							x = i
@@ -316,7 +317,7 @@ class Game:
 					self.timer = Timer(self.t, self.stopTurn)
 					self.timer.start()
 				self.move += 1
-				self.count = 0
+				# self.count = 0
 				self.avg_depth = 0
 				self.visited = 0
 				self.depth_array.clear()
@@ -324,8 +325,8 @@ class Game:
 				self.draw_board_file(file)
 				print('Going Again')
 				if self.check_end(file):
-					file.write(F'6(b)i   Average evaluation time:s\n')
-					file.write(F'6(b)ii  Total heuristic evaluations:\n')
+					file.write(F'6(b)i   Average evaluation time: {np.average(np.asarray(self.avg_time))}s\n')
+					file.write(F'6(b)ii  Total heuristic evaluations: {self.totalHeuristic}\n')
 					file.write(F'6(b)iii Evaluations by depth:\n')
 					file.write(F'6(b)iv  Average evaluation depth:\n')
 					file.write(F'6(b)v   Average recursion depth:\n')
@@ -343,6 +344,7 @@ class Game:
 					else:
 						(_, x, y) = self.alphabeta(max=True)
 				end = time.time()
+				self.avg_time.append(round(end - start, 7))
 				if (self.player_turn == 'X' and player_x == self.HUMAN) or (self.player_turn == 'O' and player_o == self.HUMAN):
 						if self.recommend:
 							file.write(F'Evaluation time: {round(end - start, 7)}s')
@@ -356,8 +358,10 @@ class Game:
 							for k in self.depth_array.keys():
 								self.visited += self.depth_array[k]
 							file.write(F'ii  Heuristic evaluations:{self.visited}\n')
+							self.totalHeuristic += self.visited
 							file.write(F'iii Evaluations by depth:{self.depth_array}\n')
 							for k in self.depth_array.keys():
+								
 								self.avg_depth += k* self.depth_array[k]
 							self.avg_depth = self.avg_depth/self.visited
 							file.write(F'iv  Average evaluation depth:{round(self.avg_depth,1)}\n')
