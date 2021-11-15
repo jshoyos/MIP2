@@ -18,6 +18,7 @@ class Game:
 		self.count = 0
 		self.avg_depth = 0
 		self.stop_event = Event()
+		self.visited = 0
 
 	def initialize_game(self):
 		self.board = BoardBuilder().boardSize().blocks().coordinates().winningSize().build()
@@ -250,6 +251,11 @@ class Game:
 					if max:
 						self.board.current_state[i][j] = 'O'
 						(v, a, b) = self.alphabeta(alpha, beta, max=False, depth = depth + 1)
+						if depth in self.depth_array:
+							self.depth_array[depth] += 1
+						else:
+							self.depth_array[depth] = 1
+						self.count += 1
 						if v > value:
 							value = v
 							x = i
@@ -257,6 +263,11 @@ class Game:
 					else:
 						self.board.current_state[i][j] = 'X'
 						(v, a, b) = self.alphabeta(alpha, beta, max=True, depth = depth + 1)
+						if depth in self.depth_array:
+							self.depth_array[depth] += 1
+						else:
+							self.depth_array[depth] = 1
+						self.count += 1
 						if v < value:
 							value = v
 							x = i
@@ -307,6 +318,7 @@ class Game:
 				self.move += 1
 				self.count = 0
 				self.avg_depth = 0
+				self.visited = 0
 				self.depth_array.clear()
 				self.draw_board()
 				self.draw_board_file(file)
@@ -341,11 +353,13 @@ class Game:
 				if (self.player_turn == 'X' and player_x == self.AI) or (self.player_turn == 'O' and player_o == self.AI):
 							file.write(F'Player {self.player_turn} under AI control plays: {chr(x + 65)}{y}\n')
 							file.write(F'i   Evaluation time: {round(end - start, 7)}s\n')
-							file.write(F'ii  Heuristic evaluations:{self.count}\n')
+							for k in self.depth_array.keys():
+								self.visited += self.depth_array[k]
+							file.write(F'ii  Heuristic evaluations:{self.visited}\n')
 							file.write(F'iii Evaluations by depth:{self.depth_array}\n')
 							for k in self.depth_array.keys():
 								self.avg_depth += k* self.depth_array[k]
-							self.avg_depth = self.avg_depth/self.count
+							self.avg_depth = self.avg_depth/self.visited
 							file.write(F'iv  Average evaluation depth:{round(self.avg_depth,1)}\n')
 							file.write(F'v   Average recursion depth:\n')
 							print(F'Player {self.player_turn} under AI control plays: {chr(x + 65)}{y}')
