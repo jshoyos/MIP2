@@ -2,6 +2,8 @@ import time
 from Board import Board
 from BoardBuilder import BoardBuilder
 import numpy as np
+import sys
+from threading import Event, Timer
 
 class Game:
 	MINIMAX = 0
@@ -15,13 +17,16 @@ class Game:
 		self.depth_array ={}
 		self.count = 0
 		self.avg_depth = 0
+		self.stop_event = Event()
 
 	def initialize_game(self):
 		self.board = BoardBuilder().boardSize().blocks().coordinates().winningSize().build()
 		self.d1 = int(input('Enter the max depth for player one: '))
 		self.d2 = int(input('Enter the max depth for player two: '))
+		self.t = float(input('Enter the maximum time per turn: '))
 		# Player X always plays first
 		self.player_turn = 'X'
+		self.move = 0
 
 	def test1(self):
 		self.board = Board(3, 0, 3, list())
@@ -110,12 +115,15 @@ class Game:
 		if self.result != None:
 			if self.result == 'X':
 				print('The winner is X!')
+				self.timer.cancel()
 				file.write('The winner is X!\n')
 			elif self.result == 'O':
 				print('The winner is O!')
+				self.timer.cancel()
 				file.write('The winner is O!\n')
 			elif self.result == '.':
 				print("It's a tie!")
+				self.timer.cancel()
 				file.write("It's a tie!\n")
 			#self.initialize_game()
 		return self.result
@@ -137,20 +145,32 @@ class Game:
 			self.player_turn = 'X'
 		return self.player_turn		
 
-	def minimax(self, maxdepth, max=False, depth = 0):
+	def minimax(self, max=False, depth = 0):
 		# Minimizing for 'X' and maximizing for 'O'
 		# Possible values are:
 		# -1 - win for 'X'
 		# 0  - a tie
 		# 1  - loss for 'X'
 		# We're initially setting it to 2 or -2 as worse than the worst case:
-		value = 2
+		value = sys.maxsize
 		if max:
-			value = -2
+			value = -sys.maxsize - 1
 		x = None
 		y = None
 		result = self.is_end()
-		if maxdepth <= 0:
+
+		if result == 'X':
+			return (-(sys.maxsize - 1)/2, x, y)
+		elif result == 'O':
+			return (sys.maxsize/2, x, y)
+		elif result == '.':
+			return (0, x, y)
+		elif self.stop_event.is_set():
+			if self.player_turn == 'X':
+				return (-(sys.maxsize - 1)/2, x, y)
+			else:
+				return (sys.maxsize/2, x, y)
+		elif (self.player_turn == 'X' and self.d1 == depth) or (self.player_turn == 'O' and self.d2 == depth):
 			if depth in self.depth_array:
 				self.depth_array[depth] += 1
 			else:
@@ -160,18 +180,12 @@ class Game:
 				return (self.e1(), x, y)
 			else:
 				return (self.e2(), x, y)
-		elif result == 'X':
-			return (-1, x, y)
-		elif result == 'O':
-			return (1, x, y)
-		elif result == '.':
-			return (0, x, y)
 		for i in range(0, self.board.board_size):
 			for j in range(0, self.board.board_size):
 				if self.board.current_state[i][j] == '.':
 					if max:
 						self.board.current_state[i][j] = 'O'
-						(v, _, _) = self.minimax(self.d2-1,max=False,depth=depth+1)
+						(v, a, b) = self.minimax(max=False, depth=depth+1)
 						if depth in self.depth_array:
 							self.depth_array[depth] += 1
 						else:
@@ -183,7 +197,7 @@ class Game:
 							y = j
 					else:
 						self.board.current_state[i][j] = 'X'
-						(v, _, _) = self.minimax(self.d1-1,max=True,depth=depth+1)
+						(v, a, b) = self.minimax(max=True,depth=depth+1)
 						if depth in self.depth_array:
 							self.depth_array[depth] += 1
 						else:
@@ -196,43 +210,53 @@ class Game:
 					self.board.current_state[i][j] = '.'
 		return (value, x, y)
 
-	def alphabeta(self, maxdepth, alpha=-2, beta=2, max=False):
+	def alphabeta(self,alpha=(-sys.maxsize - 1), beta=sys.maxsize, max=False, depth = 0):
 		# Minimizing for 'X' and maximizing for 'O'
 		# Possible values are:
 		# -1 - win for 'X'
 		# 0  - a tie
 		# 1  - loss for 'X'
 		# We're initially setting it to 2 or -2 as worse than the worst case:
-		value = 2
+		value = sys.maxsize
 		if max:
-			value = -2
+			value = -sys.maxsize - 1
 		x = None
 		y = None
 		result = self.is_end()
-		if maxdepth == 0:
+		if result == 'X':
+			return (-(sys.maxsize - 1)/2, x, y)
+		elif result == 'O':
+			return (sys.maxsize/2, x, y)
+		elif result == '.':
+			return (0, x, y)
+		elif self.stop_event.is_set():
+			if self.player_turn == 'X':
+				return (-(sys.maxsize - 1)/2, x, y)
+			else:
+				return (sys.maxsize/2, x, y)
+		elif (self.player_turn == 'X' and self.d1 == depth) or (self.player_turn == 'O' and self.d2 == depth):
+			if depth in self.depth_array:
+				self.depth_array[depth] += 1
+			else:
+				self.depth_array[depth] = 1
+			self.count = 1
 			if self.player_turn == 'X':
 				return (self.e1(), x, y)
 			else:
 				return (self.e2(), x, y)
-		if result == 'X':
-			return (-1, x, y)
-		elif result == 'O':
-			return (1, x, y)
-		elif result == '.':
-			return (0, x, y)
 		for i in range(0, self.board.board_size):
 			for j in range(0, self.board.board_size):
 				if self.board.current_state[i][j] == '.':
 					if max:
 						self.board.current_state[i][j] = 'O'
-						(v, _, _) = self.alphabeta(self.d2 - 1, alpha, beta, max=False)
+						(v, a, b) = self.alphabeta(alpha, beta, max=False, depth = depth + 1)
 						if v > value:
 							value = v
 							x = i
 							y = j
 					else:
 						self.board.current_state[i][j] = 'X'
-						(v, _, _) = self.alphabeta(self.d1 - 1, alpha, beta, max=True)
+						(v, a, b) = self.alphabeta(alpha, beta, max=True, depth = depth + 1)
 						if v < value:
 							value = v
 							x = i
@@ -277,6 +301,9 @@ class Game:
 				file.write(F'Player 2: AI d={self.d2} e2(defensive)\n')
 
 			while True:
+				self.timer = Timer(self.t, self.stopTurn)
+				self.timer.start()
+				self.move += 1
 				self.count = 0
 				self.avg_depth = 0
 				self.depth_array.clear()
@@ -294,14 +321,14 @@ class Game:
 				start = time.time()
 				if algo == self.MINIMAX:
 					if self.player_turn == 'X':
-						(_, x, y) = self.minimax(self.d1, max=False,)
+						(_, x, y) = self.minimax(max=False,)
 					else:
-						(_, x, y) = self.minimax(self.d2, max=True)
+						(_, x, y) = self.minimax(max=True)
 				else: # algo == self.ALPHABETA
 					if self.player_turn == 'X':
-						(m, x, y) = self.alphabeta(self.d1, max=False)
+						(_, x, y) = self.alphabeta(max=False)
 					else:
-						(m, x, y) = self.alphabeta(self.d2, max=True)
+						(_, x, y) = self.alphabeta(max=True)
 				end = time.time()
 				if (self.player_turn == 'X' and player_x == self.HUMAN) or (self.player_turn == 'O' and player_o == self.HUMAN):
 						if self.recommend:
@@ -323,6 +350,8 @@ class Game:
 							print(F'Player {self.player_turn} under AI control plays: {chr(x + 65)}{y}')
 							print(F'Evaluation time: {round(end - start, 7)}s')
 				self.board.current_state[x][y] = self.player_turn
+				self.timer.cancel()
+				self.stop_event.clear()
 				self.switch_player()
 
 	def checkStreak(self, array):
@@ -345,18 +374,14 @@ class Game:
 		for diag in diags:
 			if len(diag) >= self.board.winning_size:
 				diagResult.append(self.e1_logic(diag.tolist()))
-				print(f'diagResult: {diagResult}')
 		
 		verticalResult = list()
 		for i in range(0, self.board.board_size):
-			print(self.board.current_state[i])
 			verticalResult.append(self.e1_logic(self.board.current_state[i]))
-			print(f'verticalResult: {verticalResult}')
 		
 		horizontalResult = list()
 		for i in range(0, self.board.board_size):
 			horizontalResult.append(self.e1_logic([row[i] for row in self.board.current_state]))
-			print(f'horizontal: {horizontalResult}')
 
 		return np.sum(diagResult) + np.sum(horizontalResult) + np.sum(verticalResult)
 			
@@ -369,21 +394,21 @@ class Game:
 		for i in range(len(array)-1):
 			if ((array[i] == array[i+1] or array[i+1] == '.' or array[i] == '.') and (array[i] == 'O' or array[i+1] == 'O')):
 				XCount = 1
-				OCount += 1
+				OCount -= 1
 				if (OCount == self.board.winning_size):
-					resultCount -= 1
+					resultCount += 1
 			elif ((array[i] == array[i+1] or array[i+1] == '.' or array[i] == '.') and (array[i] == 'X' or array[i+1] == 'X')):
 				OCount = 1
-				XCount += 1
+				XCount -= 1
 				if (XCount == self.board.winning_size):
-					resultCount += 1
-			elif (array[i] == array[i+1] and array[i] == '.'):
-				XCount += 1
-				OCount += 1
-				if (XCount == self.board.winning_size):
-					resultCount += 1
-				if (OCount == self.board.winning_size):
 					resultCount -= 1
+			elif (array[i] == array[i+1] and array[i] == '.'):
+				XCount -= 1
+				OCount -= 1
+				if (XCount == self.board.winning_size):
+					resultCount -= 1
+				if (OCount == self.board.winning_size):
+					resultCount += 1
 			else:
 				XCount = 1
 				OCount = 1
@@ -412,8 +437,11 @@ class Game:
 			result.append(self.e2_logic(currentRow))
 		return np.sum(result)
 
-
 	def e1_logic(self, array):
 		XCount = np.count_nonzero(array == 'X')
 		OCount = np.count_nonzero(array == 'O')
-		return XCount - OCount
+		return OCount - XCount
+	
+	def stopTurn(self):
+		print('*** Out of time play now ***')
+		self.stop_event.set()
