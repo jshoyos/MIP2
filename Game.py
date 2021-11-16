@@ -364,6 +364,11 @@ class Game:
 				# self.count = 0
 				self.avg_depth = 0
 				self.visited = 0
+				for k in self.depth_array.keys():
+						if k in Game.sb_eval_by_depth:
+							Game.sb_eval_by_depth[k] += self.depth_array[k]
+						else:
+							Game.sb_eval_by_depth[k] = self.depth_array[k]
 				self.depth_array.clear()
 				self.draw_board()
 				self.draw_board_file(file)
@@ -374,11 +379,6 @@ class Game:
 					file.write(F'6(b)ii  Total heuristic evaluations: {self.totalHeuristic}\n')
 					Game.sb_total_heuristic.append(self.totalHeuristic)
 					file.write(F'6(b)iii Evaluations by depth: {self.depth_array_overall}\n')
-					for k in self.depth_array.keys():
-						if k in Game.sb_eval_by_depth:
-							Game.sb_eval_by_depth[k] += 1
-						else:
-							Game.sb_eval_by_depth[k] = 1
 					av_depth_total = 0.0
 					for k in self.depth_array_overall.keys():
 						av_depth_total += k* self.depth_array_overall[k]
