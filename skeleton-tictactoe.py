@@ -11,7 +11,7 @@ def main():
 	playerTwoType = Game.HUMAN if playerTwoType else Game.AI
 	g.play(algo=algo,player_x=playerOneType,player_o=playerTwoType)
 	# g.test1()
-	# g.play(algo=Game.MINIMAX,player_x=Game.AI,player_o=Game.AI)
+	g.play(algo=Game.MINIMAX,player_x=Game.AI,player_o=Game.AI)
 
 	s.write("\n")
 	s.write("10 games\n")
