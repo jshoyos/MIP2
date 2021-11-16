@@ -1,4 +1,6 @@
 import time
+
+from numpy.lib.function_base import average
 from Board import Board
 from BoardBuilder import BoardBuilder
 import numpy as np
@@ -21,6 +23,7 @@ class Game:
 		self.visited = 0
 		self.avg_time = []
 		self.totalHeuristic = 0
+		self.avgEvDepth = {}
 
 	def initialize_game(self):
 		self.board = BoardBuilder().boardSize().blocks().coordinates().winningSize().build()
@@ -48,7 +51,8 @@ class Game:
 		print("  ", end="")
 		for i in range(self.board.board_size):
 			print(chr(i + 65), end="")
-		print('\n +', end="")
+		print(f'(move #{self.move})')
+		print(f'+', end="")
 		for i in range(self.board.board_size):
 			print('-', end="")
 		print()
@@ -63,7 +67,8 @@ class Game:
 		file.write("  ")
 		for i in range(self.board.board_size):
 			file.write(chr(i + 65))
-		file.write('\n +')
+		file.write(f'\t(move #{self.move})')
+		file.write(f'\n +')
 		for i in range(self.board.board_size):
 			file.write('-')
 		file.write('\n')
@@ -316,7 +321,7 @@ class Game:
 				if (self.player_turn == 'X' and player_x == self.AI) or (self.player_turn == 'O' and player_o == self.AI):
 					self.timer = Timer(self.t, self.stopTurn)
 					self.timer.start()
-				self.move += 1
+				
 				# self.count = 0
 				self.avg_depth = 0
 				self.visited = 0
@@ -330,7 +335,7 @@ class Game:
 					file.write(F'6(b)iii Evaluations by depth:\n')
 					file.write(F'6(b)iv  Average evaluation depth:\n')
 					file.write(F'6(b)v   Average recursion depth:\n')
-					file.write(F'6(b)vi  Total moves:\n')
+					file.write(F'6(b)vi  Total moves: {self.move}\n')
 					return
 				start = time.time()
 				if algo == self.MINIMAX:
@@ -361,7 +366,6 @@ class Game:
 							self.totalHeuristic += self.visited
 							file.write(F'iii Evaluations by depth:{self.depth_array}\n')
 							for k in self.depth_array.keys():
-								
 								self.avg_depth += k* self.depth_array[k]
 							self.avg_depth = self.avg_depth/self.visited
 							file.write(F'iv  Average evaluation depth:{round(self.avg_depth,1)}\n')
@@ -372,6 +376,7 @@ class Game:
 				if (self.player_turn == 'X' and player_x == self.AI) or (self.player_turn == 'O' and player_o == self.AI):
 					self.timer.cancel()
 					self.stop_event.clear()
+				self.move += 1	
 				self.switch_player()
 
 	def checkStreak(self, array):
