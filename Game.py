@@ -25,7 +25,6 @@ class Game:
 		self.depth_array ={}
 		self.depth_array_overall ={}
 		self.ards = list()
-		# self.count = 0
 		self.avg_depth = 0
 		self.stop_event = Event()
 		self.visited = 0

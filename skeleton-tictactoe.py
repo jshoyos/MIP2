@@ -10,15 +10,10 @@ def main():
 	playerOneType = Game.HUMAN if playerOneType else Game.AI
 	playerTwoType = Game.HUMAN if playerTwoType else Game.AI
 	g.play(algo=algo,player_x=playerOneType,player_o=playerTwoType)
-	# g.test1()
-	g.play(algo=Game.MINIMAX,player_x=Game.AI,player_o=Game.AI)
 
-	s.write("\n")
-	s.write("10 games\n")
-	
-	s.write(F'Total wins for heuristic e1:\n')
-	s.write(F'Total wins for heurisitc e2:\n')
-	s.write("\n")
+	# for i in range (5):
+	# 	g_sb = Game(recommend=True)
+	# 	g_sb.play(algo=Game.MINIMAX,player_x=Game.AI,player_o=Game.AI)
 
 	s.write(F'i   Average evaluation time: {sum(Game.sb_avg_eval_times)/len(Game.sb_avg_eval_times)}\n')
 	s.write(F'ii  Total heuristics evaluations:{sum(Game.sb_total_heuristic)/len(Game.sb_total_heuristic)}\n')
