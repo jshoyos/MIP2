@@ -1,0 +1,6 @@
+i   Average evaluation time: 0.12307251914285715
+ii  Total heuristics evaluations:9577.0
+iii Evaluations by depth:{2: 23007, 1: 4319, 0: 435, 3: 20124} 
+iv  Average evaluation depth:2.2703749314934454 
+v   Average recursion depth:2.3859968253968256 
+vi  Average moves per game:8.8 

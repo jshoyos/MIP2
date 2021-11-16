@@ -1,24 +1,44 @@
 import time
+
+from numpy.lib.function_base import average
 from Board import Board
 from BoardBuilder import BoardBuilder
 import numpy as np
+import sys
+from threading import Event, Timer
 
 class Game:
 	MINIMAX = 0
 	ALPHABETA = 1
 	HUMAN = 2
 	AI = 3
+	sb_avg_eval_times= []
+	sb_total_heuristic =[]
+	sb_eval_by_depth = {}
+	sb_avg_eval_depth = []
+	sb_avg_rec_depth = []
+	sb_avg_moves = []
 
 	def __init__(self, recommend = True):
 		self.initialize_game()
-		self.recommend = recommend
+		self.recommend = recommend 
+		self.depth_array ={}
+		self.depth_array_overall ={}
+		self.ards = list()
+		self.avg_depth = 0
+		self.stop_event = Event()
+		self.visited = 0
+		self.avg_time = []
+		self.totalHeuristic = 0
 
 	def initialize_game(self):
 		self.board = BoardBuilder().boardSize().blocks().coordinates().winningSize().build()
 		self.d1 = int(input('Enter the max depth for player one: '))
 		self.d2 = int(input('Enter the max depth for player two: '))
+		self.t = float(input('Enter the maximum time per turn: '))
 		# Player X always plays first
 		self.player_turn = 'X'
+		self.move = 0
 
 	def test1(self):
 		self.board = Board(3, 0, 3, list())
@@ -37,7 +57,8 @@ class Game:
 		print("  ", end="")
 		for i in range(self.board.board_size):
 			print(chr(i + 65), end="")
-		print('\n +', end="")
+		print(f'(move #{self.move})')
+		print(f' +', end="")
 		for i in range(self.board.board_size):
 			print('-', end="")
 		print()
@@ -47,6 +68,22 @@ class Game:
 				print(F'{self.board.current_state[x][y]}', end="")
 			print()
 		print()
+	#TODO Should we put it in the same method?
+	def draw_board_file(self,file):
+		file.write("  ")
+		for i in range(self.board.board_size):
+			file.write(chr(i + 65))
+		file.write(f'\t(move #{self.move})')
+		file.write(f'\n +')
+		for i in range(self.board.board_size):
+			file.write('-')
+		file.write('\n')
+		for y in range(0, self.board.board_size):
+			file.write(f'{y}|')
+			for x in range(0, self.board.board_size):
+				file.write(F'{self.board.current_state[x][y]}')
+			file.write('\n')
+		file.write('\n')
 		
 	def is_valid(self, px, py):
 		if px < 0 or px > self.board.board_size - 1 or py < 0 or py > self.board.board_size - 1:
@@ -86,16 +123,22 @@ class Game:
 		# It's a tie!
 		return '.'
 
-	def check_end(self):
+	def check_end(self, file):
 		self.result = self.is_end()
 		# Printing the appropriate message if the game has ended
 		if self.result != None:
 			if self.result == 'X':
 				print('The winner is X!')
+				self.timer.cancel()
+				file.write('The winner is X!\n')
 			elif self.result == 'O':
 				print('The winner is O!')
+				self.timer.cancel()
+				file.write('The winner is O!\n')
 			elif self.result == '.':
 				print("It's a tie!")
+				self.timer.cancel()
+				file.write("It's a tie!\n")
 			#self.initialize_game()
 		return self.result
 
@@ -114,89 +157,161 @@ class Game:
 			self.player_turn = 'O'
 		elif self.player_turn == 'O':
 			self.player_turn = 'X'
-		return self.player_turn
+		return self.player_turn		
 
-	def minimax(self, maxdepth, max=False):
+	def minimax(self, max=False, depth = 0):
 		# Minimizing for 'X' and maximizing for 'O'
 		# Possible values are:
 		# -1 - win for 'X'
 		# 0  - a tie
 		# 1  - loss for 'X'
 		# We're initially setting it to 2 or -2 as worse than the worst case:
-		value = 2
+		value = sys.maxsize
 		if max:
-			value = -2
+			value = -sys.maxsize - 1
 		x = None
 		y = None
 		result = self.is_end()
-		if maxdepth == 0:
-			if self.player_turn == 'X':
-				return (self.e1(), x, y)
-			else:
-				return (self.e2(), x, y)
-		elif result == 'X':
-			return (-1, x, y)
+
+		if result == 'X':
+			return (-(sys.maxsize - 1)/2, x, y, depth)
 		elif result == 'O':
-			return (1, x, y)
+			return (sys.maxsize/2, x, y,depth)
 		elif result == '.':
-			return (0, x, y)
+			return (0, x, y, depth)
+		elif self.stop_event.is_set():
+			if self.player_turn == 'X':
+				return (-(sys.maxsize - 1)/2, x, y,depth)
+			else:
+				return (sys.maxsize/2, x, y,depth)
+		elif (self.player_turn == 'X' and self.d1 == depth) or (self.player_turn == 'O' and self.d2 == depth):
+			if depth in self.depth_array_overall:
+				self.depth_array_overall[depth] += 1
+			else:
+				self.depth_array_overall[depth] = 1
+			
+			if depth in self.depth_array:
+				self.depth_array[depth] += 1
+			else:
+				self.depth_array[depth] = 1
+			# self.count += 1
+			if self.player_turn == 'X':
+				return (self.e1(), x, y, depth)
+			else:
+				return (self.e2(), x, y, depth)
+		ARD = []
 		for i in range(0, self.board.board_size):
 			for j in range(0, self.board.board_size):
 				if self.board.current_state[i][j] == '.':
 					if max:
 						self.board.current_state[i][j] = 'O'
-						(v, _, _) = self.minimax(self.d2-1,max=False)
+						(v, a, b, ard) = self.minimax(max=False, depth=depth+1)
+						
+						ARD.append(ard)
+						if depth in self.depth_array_overall:
+							self.depth_array_overall[depth] += 1
+						else:
+							self.depth_array_overall[depth] = 1
+						if depth in self.depth_array:
+							self.depth_array[depth] += 1
+						else:
+							self.depth_array[depth] = 1
+						# self.count += 1
 						if v > value:
 							value = v
 							x = i
 							y = j
 					else:
 						self.board.current_state[i][j] = 'X'
-						(v, _, _) = self.minimax(self.d1-1,max=True)
+						(v, a, b, ard) = self.minimax(max=True,depth=depth+1)
+						ARD.append(ard)
+						if depth in self.depth_array_overall:
+							self.depth_array_overall[depth] += 1
+						else:
+							self.depth_array_overall[depth] = 1
+						if depth in self.depth_array:
+							self.depth_array[depth] += 1
+						else:
+							self.depth_array[depth] = 1
+						# self.count += 1
 						if v < value:
 							value = v
 							x = i
 							y = j
 					self.board.current_state[i][j] = '.'
-		return (value, x, y)
+		return (value, x, y, round(np.average(np.asarray(ARD)), 2))
 
-	def alphabeta(self, maxdepth, alpha=-2, beta=2, max=False):
+	def alphabeta(self,alpha=(-sys.maxsize - 1), beta=sys.maxsize, max=False, depth = 0):
 		# Minimizing for 'X' and maximizing for 'O'
 		# Possible values are:
 		# -1 - win for 'X'
 		# 0  - a tie
 		# 1  - loss for 'X'
 		# We're initially setting it to 2 or -2 as worse than the worst case:
-		value = 2
+		value = sys.maxsize
 		if max:
-			value = -2
+			value = -sys.maxsize - 1
 		x = None
 		y = None
 		result = self.is_end()
-		if maxdepth == 0:
-			if self.player_turn == 'X':
-				return (self.e1(), x, y)
-			else:
-				return (self.e2(), x, y)
 		if result == 'X':
-			return (-1, x, y)
+			return (-(sys.maxsize - 1)/2, x, y, depth)
 		elif result == 'O':
-			return (1, x, y)
+			return (sys.maxsize/2, x, y, depth)
 		elif result == '.':
-			return (0, x, y)
+			return (0, x, y, depth)
+		elif self.stop_event.is_set():
+			if self.player_turn == 'X':
+				return (-(sys.maxsize - 1)/2, x, y, depth)
+			else:
+				return (sys.maxsize/2, x, y, depth)
+		elif (self.player_turn == 'X' and self.d1 == depth) or (self.player_turn == 'O' and self.d2 == depth):
+			if depth in self.depth_array_overall:
+				self.depth_array_overall[depth] += 1
+			else:
+				self.depth_array_overall[depth] = 1
+			if depth in self.depth_array:
+				self.depth_array[depth] += 1
+			else:
+				self.depth_array[depth] = 1
+			# self.count += 1
+			if self.player_turn == 'X':
+				return (self.e1(), x, y, depth)
+			else:
+				return (self.e2(), x, y, depth)
+		ARD = list()
 		for i in range(0, self.board.board_size):
 			for j in range(0, self.board.board_size):
 				if self.board.current_state[i][j] == '.':
 					if max:
 						self.board.current_state[i][j] = 'O'
-						(v, _, _) = self.alphabeta(self.d2 - 1, alpha, beta, max=False)
+						(v, a, b,ard) = self.alphabeta(alpha, beta, max=False, depth = depth + 1)
+						ARD.append(ard)
+						if depth in self.depth_array_overall:
+							self.depth_array_overall[depth] += 1
+						else:
+							self.depth_array_overall[depth] = 1
+						if depth in self.depth_array:
+							self.depth_array[depth] += 1
+						else:
+							self.depth_array[depth] = 1
 						if v > value:
 							value = v
 							x = i
 							y = j
 					else:
 						self.board.current_state[i][j] = 'X'
-						(v, _, _) = self.alphabeta(self.d1 - 1, alpha, beta, max=True)
+						(v, a, b, ard) = self.alphabeta(alpha, beta, max=True, depth = depth + 1)
+						ARD.append(ard)
+						if depth in self.depth_array_overall:
+							self.depth_array_overall[depth] += 1
+						else:
+							self.depth_array_overall[depth] = 1
+						if depth in self.depth_array:
+							self.depth_array[depth] += 1
+						else:
+							self.depth_array[depth] = 1
+						# self.count += 1
 						if v < value:
 							value = v
 							x = i
@@ -204,50 +319,120 @@ class Game:
 					self.board.current_state[i][j] = '.'
 					if max: 
 						if value >= beta:
-							return (value, x, y)
+							return (value, x, y, depth)
 						if value > alpha:
 							alpha = value
 					else:
 						if value <= alpha:
-							return (value, x, y)
+							return (value, x, y, depth)
 						if value < beta:
 							beta = value
-		return (value, x, y)
+		return (value, x, y, round(np.average(np.asarray(ARD)), 2))
 
 	def play(self,algo=None,player_x=None,player_o=None):
-		if algo == None:
-			algo = self.ALPHABETA
-		if player_x == None:
-			player_x = self.HUMAN
-		if player_o == None:
-			player_o = self.HUMAN
-		while True:
-			self.draw_board()
-			print('Going Again')
-			if self.check_end():
-				return
-			start = time.time()
-			if algo == self.MINIMAX:
-				if self.player_turn == 'X':
-					(_, x, y) = self.minimax(self.d1, max=False)
-				else:
-					(_, x, y) = self.minimax(self.d2, max=True)
-			else: # algo == self.ALPHABETA
-				if self.player_turn == 'X':
-					(m, x, y) = self.alphabeta(self.d1, max=False)
-				else:
-					(m, x, y) = self.alphabeta(self.d2, max=True)
-			end = time.time()
-			if (self.player_turn == 'X' and player_x == self.HUMAN) or (self.player_turn == 'O' and player_o == self.HUMAN):
-					if self.recommend:
-						print(F'Evaluation time: {round(end - start, 7)}s')
-						print(F'Recommended move: x = {x}, y = {y}')
-					(x,y) = self.input_move()
-			if (self.player_turn == 'X' and player_x == self.AI) or (self.player_turn == 'O' and player_o == self.AI):
-						print(F'Evaluation time: {round(end - start, 7)}s')
-						print(F'Player {self.player_turn} under AI control plays: {chr(x + 65)}{y}')
-			self.board.current_state[x][y] = self.player_turn
-			self.switch_player()
+		n = self.board.board_size
+		b = self.board.number_blocks
+		s = self.board.winning_size
+		t = self.t
+		bloc_list = list()
+		with open(F'gameTrace-{n}{b}{s}{t}.txt','a') as file:
+			file.write(F'n={n} b={b} s={s} t={t}\n')
+			for i in range(0, self.board.board_size):
+				for j in range(0, self.board.board_size):
+					if (self.board.current_state[i][j] == '*'):
+						bloc_list.append((i,j))
+			file.write(F'blocs={bloc_list}\n')
+			if algo == None:
+				algo = self.ALPHABETA
+			if player_x == None:
+				player_x = self.HUMAN
+				file.write(F'Player 1: HUMAN\n')
+			else:
+				file.write(F'Player 1: AI d={self.d1} e1(regular)\n')
+			if player_o == None:
+				player_o = self.HUMAN
+				file.write(F'Player 2: HUMAN\n')
+			else:
+				file.write(F'Player 2: AI d={self.d2} e2(defensive)\n')
+
+			while True:
+				if (self.player_turn == 'X' and player_x == self.AI) or (self.player_turn == 'O' and player_o == self.AI):
+					self.timer = Timer(self.t - 0.1, self.stopTurn, [file])
+					self.timer.start()
+				
+				# self.count = 0
+				self.avg_depth = 0
+				self.visited = 0
+				for k in self.depth_array.keys():
+						if k in Game.sb_eval_by_depth:
+							Game.sb_eval_by_depth[k] += self.depth_array[k]
+						else:
+							Game.sb_eval_by_depth[k] = self.depth_array[k]
+				self.depth_array.clear()
+				self.draw_board()
+				self.draw_board_file(file)
+				print('Going Again')
+				if self.check_end(file):
+					file.write(F'6(b)i   Average evaluation time: {np.average(np.asarray(self.avg_time))}s\n')
+					Game.sb_avg_eval_times.append(np.average(np.asarray(self.avg_time)))
+					file.write(F'6(b)ii  Total heuristic evaluations: {self.totalHeuristic}\n')
+					Game.sb_total_heuristic.append(self.totalHeuristic)
+					file.write(F'6(b)iii Evaluations by depth: {self.depth_array_overall}\n')
+					av_depth_total = 0.0
+					for k in self.depth_array_overall.keys():
+						av_depth_total += k* self.depth_array_overall[k]
+					av_depth_total = av_depth_total/self.totalHeuristic
+					file.write(F'6(b)iv  Average evaluation depth: {av_depth_total}\n')
+					Game.sb_avg_eval_depth.append(av_depth_total)
+					file.write(F'6(b)v   Average recursion depth:{np.average(np.asarray(self.ards))}\n')
+					Game.sb_avg_rec_depth.append(np.average(np.asarray(self.ards)))
+					file.write(F'6(b)vi  Total moves: {self.move}\n')
+					Game.sb_avg_moves.append(self.move)
+					return
+				start = time.time()
+				if algo == self.MINIMAX:
+					if self.player_turn == 'X':
+						(_, x, y, ard) = self.minimax(max=False,)
+					else:
+						(_, x, y, ard) = self.minimax(max=True)
+				else: # algo == self.ALPHABETA
+					if self.player_turn == 'X':
+						(_, x, y, ard) = self.alphabeta(max=False)
+					else:
+						(_, x, y, ard) = self.alphabeta(max=True)
+				end = time.time()
+				if self.stop_event.is_set():
+					ard = 0
+				self.ards.append(ard)
+				self.avg_time.append(round(end - start, 7))
+				if (self.player_turn == 'X' and player_x == self.HUMAN) or (self.player_turn == 'O' and player_o == self.HUMAN):
+						if self.recommend:
+							file.write(F'Evaluation time: {round(end - start, 7)}s')
+							file.write(F'\nRecommended move: x = {chr(x+65)}, y = {y}')
+							print(F'Evaluation time: {round(end - start, 7)}s')
+							print(F'Recommended move: x = {chr(x+65)}, y = {y}')
+						(x,y) = self.input_move()
+				if (self.player_turn == 'X' and player_x == self.AI) or (self.player_turn == 'O' and player_o == self.AI):
+							file.write(F'Player {self.player_turn} under AI control plays: {chr(x + 65)}{y}\n')
+							file.write(F'i   Evaluation time: {round(end - start, 7)}s\n')
+							for k in self.depth_array.keys():
+								self.visited += self.depth_array[k]
+							file.write(F'ii  Heuristic evaluations:{self.visited}\n')
+							self.totalHeuristic += self.visited
+							file.write(F'iii Evaluations by depth:{self.depth_array}\n')
+							for k in self.depth_array.keys():
+								self.avg_depth += k* self.depth_array[k]
+							self.avg_depth = self.avg_depth/self.visited
+							file.write(F'iv  Average evaluation depth:{round(self.avg_depth,1)}\n')
+							file.write(F'v   Average recursion depth: {ard}\n')
+							print(F'Player {self.player_turn} under AI control plays: {chr(x + 65)}{y}')
+							print(F'Evaluation time: {round(end - start, 7)}s')
+				self.board.current_state[x][y] = self.player_turn
+				if (self.player_turn == 'X' and player_x == self.AI) or (self.player_turn == 'O' and player_o == self.AI):
+					self.timer.cancel()
+					self.stop_event.clear()
+				self.move += 1	
+				self.switch_player()
 
 	def checkStreak(self, array):
 		count = 1
@@ -269,18 +454,14 @@ class Game:
 		for diag in diags:
 			if len(diag) >= self.board.winning_size:
 				diagResult.append(self.e1_logic(diag.tolist()))
-				print(f'diagResult: {diagResult}')
 		
 		verticalResult = list()
 		for i in range(0, self.board.board_size):
-			print(self.board.current_state[i])
 			verticalResult.append(self.e1_logic(self.board.current_state[i]))
-			print(f'verticalResult: {verticalResult}')
 		
 		horizontalResult = list()
 		for i in range(0, self.board.board_size):
 			horizontalResult.append(self.e1_logic([row[i] for row in self.board.current_state]))
-			print(f'horizontal: {horizontalResult}')
 
 		return np.sum(diagResult) + np.sum(horizontalResult) + np.sum(verticalResult)
 			
@@ -293,21 +474,21 @@ class Game:
 		for i in range(len(array)-1):
 			if ((array[i] == array[i+1] or array[i+1] == '.' or array[i] == '.') and (array[i] == 'O' or array[i+1] == 'O')):
 				XCount = 1
-				OCount += 1
+				OCount -= 1
 				if (OCount == self.board.winning_size):
-					resultCount -= 1
+					resultCount += 1
 			elif ((array[i] == array[i+1] or array[i+1] == '.' or array[i] == '.') and (array[i] == 'X' or array[i+1] == 'X')):
 				OCount = 1
-				XCount += 1
+				XCount -= 1
 				if (XCount == self.board.winning_size):
-					resultCount += 1
-			elif (array[i] == array[i+1] and array[i] == '.'):
-				XCount += 1
-				OCount += 1
-				if (XCount == self.board.winning_size):
-					resultCount += 1
-				if (OCount == self.board.winning_size):
 					resultCount -= 1
+			elif (array[i] == array[i+1] and array[i] == '.'):
+				XCount -= 1
+				OCount -= 1
+				if (XCount == self.board.winning_size):
+					resultCount -= 1
+				if (OCount == self.board.winning_size):
+					resultCount += 1
 			else:
 				XCount = 1
 				OCount = 1
@@ -339,4 +520,9 @@ class Game:
 	def e1_logic(self, array):
 		XCount = np.count_nonzero(array == 'X')
 		OCount = np.count_nonzero(array == 'O')
-		return XCount - OCount
+		return OCount - XCount
+	
+	def stopTurn(self, file):
+		print('*** Out of time play now ***')
+		file.write('*** Out of time play now ***\n')
+		self.stop_event.set()
