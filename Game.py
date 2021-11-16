@@ -328,7 +328,7 @@ class Game:
 		n = self.board.board_size
 		b = self.board.number_blocks
 		s = self.board.winning_size
-		t = 5
+		t = self.t
 		bloc_list = list()
 		with open(F'gameTrace-{n}{b}{s}{t}.txt','a') as file:
 			file.write(F'n={n} b={b} s={s} t={t}\n')
