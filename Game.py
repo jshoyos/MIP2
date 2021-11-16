@@ -17,13 +17,13 @@ class Game:
 		self.initialize_game()
 		self.recommend = recommend 
 		self.depth_array ={}
+		self.depth_array_overall ={}
 		# self.count = 0
 		self.avg_depth = 0
 		self.stop_event = Event()
 		self.visited = 0
 		self.avg_time = []
 		self.totalHeuristic = 0
-		self.avgEvDepth = {}
 
 	def initialize_game(self):
 		self.board = BoardBuilder().boardSize().blocks().coordinates().winningSize().build()
@@ -179,6 +179,11 @@ class Game:
 			else:
 				return (sys.maxsize/2, x, y)
 		elif (self.player_turn == 'X' and self.d1 == depth) or (self.player_turn == 'O' and self.d2 == depth):
+			if depth in self.depth_array_overall:
+				self.depth_array_overall[depth] += 1
+			else:
+				self.depth_array_overall[depth] = 1
+			
 			if depth in self.depth_array:
 				self.depth_array[depth] += 1
 			else:
@@ -194,6 +199,10 @@ class Game:
 					if max:
 						self.board.current_state[i][j] = 'O'
 						(v, a, b) = self.minimax(max=False, depth=depth+1)
+						if depth in self.depth_array_overall:
+							self.depth_array_overall[depth] += 1
+						else:
+							self.depth_array_overall[depth] = 1
 						if depth in self.depth_array:
 							self.depth_array[depth] += 1
 						else:
@@ -206,6 +215,10 @@ class Game:
 					else:
 						self.board.current_state[i][j] = 'X'
 						(v, a, b) = self.minimax(max=True,depth=depth+1)
+						if depth in self.depth_array_overall:
+							self.depth_array_overall[depth] += 1
+						else:
+							self.depth_array_overall[depth] = 1
 						if depth in self.depth_array:
 							self.depth_array[depth] += 1
 						else:
@@ -243,6 +256,10 @@ class Game:
 			else:
 				return (sys.maxsize/2, x, y)
 		elif (self.player_turn == 'X' and self.d1 == depth) or (self.player_turn == 'O' and self.d2 == depth):
+			if depth in self.depth_array_overall:
+				self.depth_array_overall[depth] += 1
+			else:
+				self.depth_array_overall[depth] = 1
 			if depth in self.depth_array:
 				self.depth_array[depth] += 1
 			else:
@@ -258,6 +275,10 @@ class Game:
 					if max:
 						self.board.current_state[i][j] = 'O'
 						(v, a, b) = self.alphabeta(alpha, beta, max=False, depth = depth + 1)
+						if depth in self.depth_array_overall:
+							self.depth_array_overall[depth] += 1
+						else:
+							self.depth_array_overall[depth] = 1
 						if depth in self.depth_array:
 							self.depth_array[depth] += 1
 						else:
@@ -269,6 +290,10 @@ class Game:
 					else:
 						self.board.current_state[i][j] = 'X'
 						(v, a, b) = self.alphabeta(alpha, beta, max=True, depth = depth + 1)
+						if depth in self.depth_array_overall:
+							self.depth_array_overall[depth] += 1
+						else:
+							self.depth_array_overall[depth] = 1
 						if depth in self.depth_array:
 							self.depth_array[depth] += 1
 						else:
@@ -332,8 +357,12 @@ class Game:
 				if self.check_end(file):
 					file.write(F'6(b)i   Average evaluation time: {np.average(np.asarray(self.avg_time))}s\n')
 					file.write(F'6(b)ii  Total heuristic evaluations: {self.totalHeuristic}\n')
-					file.write(F'6(b)iii Evaluations by depth:\n')
-					file.write(F'6(b)iv  Average evaluation depth:\n')
+					file.write(F'6(b)iii Evaluations by depth: {self.depth_array_overall}\n')
+					av_depth_total = 0.0
+					for k in self.depth_array_overall.keys():
+						av_depth_total += k* self.depth_array_overall[k]
+					av_depth_total = av_depth_total/self.totalHeuristic
+					file.write(F'6(b)iv  Average evaluation depth: {av_depth_total}\n')
 					file.write(F'6(b)v   Average recursion depth:\n')
 					file.write(F'6(b)vi  Total moves: {self.move}\n')
 					return
