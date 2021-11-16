@@ -12,6 +12,12 @@ class Game:
 	ALPHABETA = 1
 	HUMAN = 2
 	AI = 3
+	sb_avg_eval_times= []
+	sb_total_heuristic =[]
+	sb_eval_by_depth = {}
+	sb_avg_eval_depth = []
+	sb_avg_rec_depth = []
+	sb_avg_moves = []
 
 	def __init__(self, recommend = True):
 		self.initialize_game()
@@ -364,15 +370,25 @@ class Game:
 				print('Going Again')
 				if self.check_end(file):
 					file.write(F'6(b)i   Average evaluation time: {np.average(np.asarray(self.avg_time))}s\n')
+					Game.sb_avg_eval_times.append(np.average(np.asarray(self.avg_time)))
 					file.write(F'6(b)ii  Total heuristic evaluations: {self.totalHeuristic}\n')
+					Game.sb_total_heuristic.append(self.totalHeuristic)
 					file.write(F'6(b)iii Evaluations by depth: {self.depth_array_overall}\n')
+					for k in self.depth_array.keys():
+						if k in Game.sb_eval_by_depth:
+							Game.sb_eval_by_depth[k] += 1
+						else:
+							Game.sb_eval_by_depth[k] = 1
 					av_depth_total = 0.0
 					for k in self.depth_array_overall.keys():
 						av_depth_total += k* self.depth_array_overall[k]
 					av_depth_total = av_depth_total/self.totalHeuristic
 					file.write(F'6(b)iv  Average evaluation depth: {av_depth_total}\n')
+					Game.sb_avg_eval_depth.append(av_depth_total)
 					file.write(F'6(b)v   Average recursion depth:{np.average(np.asarray(self.ards))}\n')
+					Game.sb_avg_rec_depth.append(np.average(np.asarray(self.ards)))
 					file.write(F'6(b)vi  Total moves: {self.move}\n')
+					Game.sb_avg_moves.append(self.move)
 					return
 				start = time.time()
 				if algo == self.MINIMAX:
