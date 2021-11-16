@@ -15,8 +15,9 @@ class Game:
 	sb_avg_eval_times= []
 	sb_total_heuristic =[]
 	sb_eval_by_depth = {}
-	# sb_avg_eval_depth = []
-	# sb_avg_moves = []
+	sb_avg_eval_depth = []
+	sb_avg_rec_depth = []
+	sb_avg_moves = []
 
 	def __init__(self, recommend = True):
 		self.initialize_game()
@@ -383,8 +384,11 @@ class Game:
 						av_depth_total += k* self.depth_array_overall[k]
 					av_depth_total = av_depth_total/self.totalHeuristic
 					file.write(F'6(b)iv  Average evaluation depth: {av_depth_total}\n')
+					Game.sb_avg_eval_depth.append(av_depth_total)
 					file.write(F'6(b)v   Average recursion depth:{np.average(np.asarray(self.ards))}\n')
+					Game.sb_avg_rec_depth.append(np.average(np.asarray(self.ards)))
 					file.write(F'6(b)vi  Total moves: {self.move}\n')
+					Game.sb_avg_moves.append(self.move)
 					return
 				start = time.time()
 				if algo == self.MINIMAX:
