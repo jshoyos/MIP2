@@ -18,6 +18,7 @@ class Game:
 		self.recommend = recommend 
 		self.depth_array ={}
 		self.depth_array_overall ={}
+		self.ards = list()
 		# self.count = 0
 		self.avg_depth = 0
 		self.stop_event = Event()
@@ -52,7 +53,7 @@ class Game:
 		for i in range(self.board.board_size):
 			print(chr(i + 65), end="")
 		print(f'(move #{self.move})')
-		print(f'+', end="")
+		print(f' +', end="")
 		for i in range(self.board.board_size):
 			print('-', end="")
 		print()
@@ -168,16 +169,16 @@ class Game:
 		result = self.is_end()
 
 		if result == 'X':
-			return (-(sys.maxsize - 1)/2, x, y)
+			return (-(sys.maxsize - 1)/2, x, y, depth)
 		elif result == 'O':
-			return (sys.maxsize/2, x, y)
+			return (sys.maxsize/2, x, y,depth)
 		elif result == '.':
-			return (0, x, y)
+			return (0, x, y, depth)
 		elif self.stop_event.is_set():
 			if self.player_turn == 'X':
-				return (-(sys.maxsize - 1)/2, x, y)
+				return (-(sys.maxsize - 1)/2, x, y,depth)
 			else:
-				return (sys.maxsize/2, x, y)
+				return (sys.maxsize/2, x, y,depth)
 		elif (self.player_turn == 'X' and self.d1 == depth) or (self.player_turn == 'O' and self.d2 == depth):
 			if depth in self.depth_array_overall:
 				self.depth_array_overall[depth] += 1
@@ -190,15 +191,18 @@ class Game:
 				self.depth_array[depth] = 1
 			# self.count += 1
 			if self.player_turn == 'X':
-				return (self.e1(), x, y)
+				return (self.e1(), x, y, depth)
 			else:
-				return (self.e2(), x, y)
+				return (self.e2(), x, y, depth)
+		ARD = []
 		for i in range(0, self.board.board_size):
 			for j in range(0, self.board.board_size):
 				if self.board.current_state[i][j] == '.':
 					if max:
 						self.board.current_state[i][j] = 'O'
-						(v, a, b) = self.minimax(max=False, depth=depth+1)
+						(v, a, b, ard) = self.minimax(max=False, depth=depth+1)
+						
+						ARD.append(ard)
 						if depth in self.depth_array_overall:
 							self.depth_array_overall[depth] += 1
 						else:
@@ -214,7 +218,8 @@ class Game:
 							y = j
 					else:
 						self.board.current_state[i][j] = 'X'
-						(v, a, b) = self.minimax(max=True,depth=depth+1)
+						(v, a, b, ard) = self.minimax(max=True,depth=depth+1)
+						ARD.append(ard)
 						if depth in self.depth_array_overall:
 							self.depth_array_overall[depth] += 1
 						else:
@@ -229,7 +234,7 @@ class Game:
 							x = i
 							y = j
 					self.board.current_state[i][j] = '.'
-		return (value, x, y)
+		return (value, x, y, round(np.average(np.asarray(ARD)), 2))
 
 	def alphabeta(self,alpha=(-sys.maxsize - 1), beta=sys.maxsize, max=False, depth = 0):
 		# Minimizing for 'X' and maximizing for 'O'
@@ -245,16 +250,16 @@ class Game:
 		y = None
 		result = self.is_end()
 		if result == 'X':
-			return (-(sys.maxsize - 1)/2, x, y)
+			return (-(sys.maxsize - 1)/2, x, y, depth)
 		elif result == 'O':
-			return (sys.maxsize/2, x, y)
+			return (sys.maxsize/2, x, y, depth)
 		elif result == '.':
-			return (0, x, y)
+			return (0, x, y, depth)
 		elif self.stop_event.is_set():
 			if self.player_turn == 'X':
-				return (-(sys.maxsize - 1)/2, x, y)
+				return (-(sys.maxsize - 1)/2, x, y, depth)
 			else:
-				return (sys.maxsize/2, x, y)
+				return (sys.maxsize/2, x, y, depth)
 		elif (self.player_turn == 'X' and self.d1 == depth) or (self.player_turn == 'O' and self.d2 == depth):
 			if depth in self.depth_array_overall:
 				self.depth_array_overall[depth] += 1
@@ -266,15 +271,17 @@ class Game:
 				self.depth_array[depth] = 1
 			# self.count += 1
 			if self.player_turn == 'X':
-				return (self.e1(), x, y)
+				return (self.e1(), x, y, depth)
 			else:
-				return (self.e2(), x, y)
+				return (self.e2(), x, y, depth)
+		ARD = list()
 		for i in range(0, self.board.board_size):
 			for j in range(0, self.board.board_size):
 				if self.board.current_state[i][j] == '.':
 					if max:
 						self.board.current_state[i][j] = 'O'
-						(v, a, b) = self.alphabeta(alpha, beta, max=False, depth = depth + 1)
+						(v, a, b,ard) = self.alphabeta(alpha, beta, max=False, depth = depth + 1)
+						ARD.append(ard)
 						if depth in self.depth_array_overall:
 							self.depth_array_overall[depth] += 1
 						else:
@@ -289,7 +296,8 @@ class Game:
 							y = j
 					else:
 						self.board.current_state[i][j] = 'X'
-						(v, a, b) = self.alphabeta(alpha, beta, max=True, depth = depth + 1)
+						(v, a, b, ard) = self.alphabeta(alpha, beta, max=True, depth = depth + 1)
+						ARD.append(ard)
 						if depth in self.depth_array_overall:
 							self.depth_array_overall[depth] += 1
 						else:
@@ -306,15 +314,15 @@ class Game:
 					self.board.current_state[i][j] = '.'
 					if max: 
 						if value >= beta:
-							return (value, x, y)
+							return (value, x, y, depth)
 						if value > alpha:
 							alpha = value
 					else:
 						if value <= alpha:
-							return (value, x, y)
+							return (value, x, y, depth)
 						if value < beta:
 							beta = value
-		return (value, x, y)
+		return (value, x, y, round(np.average(np.asarray(ARD)), 2))
 
 	def play(self,algo=None,player_x=None,player_o=None):
 		n = self.board.board_size
@@ -344,7 +352,7 @@ class Game:
 
 			while True:
 				if (self.player_turn == 'X' and player_x == self.AI) or (self.player_turn == 'O' and player_o == self.AI):
-					self.timer = Timer(self.t, self.stopTurn)
+					self.timer = Timer(self.t - 0.1, self.stopTurn, [file])
 					self.timer.start()
 				
 				# self.count = 0
@@ -363,28 +371,31 @@ class Game:
 						av_depth_total += k* self.depth_array_overall[k]
 					av_depth_total = av_depth_total/self.totalHeuristic
 					file.write(F'6(b)iv  Average evaluation depth: {av_depth_total}\n')
-					file.write(F'6(b)v   Average recursion depth:\n')
+					file.write(F'6(b)v   Average recursion depth:{np.average(np.asarray(self.ards))}\n')
 					file.write(F'6(b)vi  Total moves: {self.move}\n')
 					return
 				start = time.time()
 				if algo == self.MINIMAX:
 					if self.player_turn == 'X':
-						(_, x, y) = self.minimax(max=False,)
+						(_, x, y, ard) = self.minimax(max=False,)
 					else:
-						(_, x, y) = self.minimax(max=True)
+						(_, x, y, ard) = self.minimax(max=True)
 				else: # algo == self.ALPHABETA
 					if self.player_turn == 'X':
-						(_, x, y) = self.alphabeta(max=False)
+						(_, x, y, ard) = self.alphabeta(max=False)
 					else:
-						(_, x, y) = self.alphabeta(max=True)
+						(_, x, y, ard) = self.alphabeta(max=True)
 				end = time.time()
+				if self.stop_event.is_set():
+					ard = 0
+				self.ards.append(ard)
 				self.avg_time.append(round(end - start, 7))
 				if (self.player_turn == 'X' and player_x == self.HUMAN) or (self.player_turn == 'O' and player_o == self.HUMAN):
 						if self.recommend:
 							file.write(F'Evaluation time: {round(end - start, 7)}s')
-							file.write(F'Recommended move: x = {x}, y = {y}')
+							file.write(F'\nRecommended move: x = {chr(x+65)}, y = {y}')
 							print(F'Evaluation time: {round(end - start, 7)}s')
-							print(F'Recommended move: x = {x}, y = {y}')
+							print(F'Recommended move: x = {chr(x+65)}, y = {y}')
 						(x,y) = self.input_move()
 				if (self.player_turn == 'X' and player_x == self.AI) or (self.player_turn == 'O' and player_o == self.AI):
 							file.write(F'Player {self.player_turn} under AI control plays: {chr(x + 65)}{y}\n')
@@ -398,7 +409,7 @@ class Game:
 								self.avg_depth += k* self.depth_array[k]
 							self.avg_depth = self.avg_depth/self.visited
 							file.write(F'iv  Average evaluation depth:{round(self.avg_depth,1)}\n')
-							file.write(F'v   Average recursion depth:\n')
+							file.write(F'v   Average recursion depth: {ard}\n')
 							print(F'Player {self.player_turn} under AI control plays: {chr(x + 65)}{y}')
 							print(F'Evaluation time: {round(end - start, 7)}s')
 				self.board.current_state[x][y] = self.player_turn
@@ -496,6 +507,7 @@ class Game:
 		OCount = np.count_nonzero(array == 'O')
 		return OCount - XCount
 	
-	def stopTurn(self):
+	def stopTurn(self, file):
 		print('*** Out of time play now ***')
+		file.write('*** Out of time play now ***\n')
 		self.stop_event.set()
